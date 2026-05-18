@@ -3,6 +3,13 @@ import { observeSemanticState } from "../index.js";
 import type { ContextMode } from "../context/compiler.js";
 import { compileContext } from "../context/compiler.js";
 import type { SemanticNode, SemanticPageState } from "../types/schema.js";
+import type {
+  FindTargetsRequest,
+  FindTargetsResponse,
+  ObservePageRequest,
+  ObservePageResponse,
+  SelectorPlanResponse
+} from "./contracts.js";
 
 export interface FindTargetsQuery {
   role?: string;
@@ -12,8 +19,10 @@ export interface FindTargetsQuery {
 }
 
 export class BrowserCognitionService {
-  public async observePage(page: Page): Promise<SemanticPageState> {
-    return observeSemanticState(page);
+  public async observePage(page: Page, request?: ObservePageRequest): Promise<ObservePageResponse> {
+    const state = await observeSemanticState(page);
+    if (!request?.mode) return { state };
+    return { state: compileContext(state, request.mode, request.budget ?? 200) };
   }
 
   public compile(state: SemanticPageState, mode: ContextMode, budget: number): SemanticPageState {
@@ -31,7 +40,23 @@ export class BrowserCognitionService {
     });
   }
 
-  public getSelectorPlan(state: SemanticPageState, nodeId: string): SemanticNode | undefined {
-    return state.nodes.find((node) => node.id === nodeId);
+  public findTargetsTool(state: SemanticPageState, request: FindTargetsRequest): FindTargetsResponse {
+    const matches = this.findTargets(state, request);
+    return { matches, count: matches.length };
+  }
+
+  public getSelectorPlan(state: SemanticPageState, nodeId: string): SelectorPlanResponse | undefined {
+    const node = state.nodes.find((entry) => entry.id === nodeId);
+    if (!node) return undefined;
+
+    const selectors = node.selectors.map((selector) => ({
+      kind: selector.kind,
+      value: selector.value,
+      score: selector.score,
+      reason: selector.reason ?? "Fallback selector candidate."
+    }));
+    const fallbackChain = selectors.slice(1).map((selector) => selector.value);
+
+    return { nodeId, selectors, fallbackChain };
   }
 }

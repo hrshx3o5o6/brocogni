@@ -27,4 +27,5 @@ export * from "./context/compiler.js";
 export * from "./selector/rank.js";
 export * from "./selector/generate.js";
 export * from "./runtime/service.js";
+export * from "./runtime/contracts.js";
 export * from "./semantic/fuse.js";

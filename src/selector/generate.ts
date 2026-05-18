@@ -12,7 +12,8 @@ function fromRoleName(node: SemanticNode): SelectorCandidate[] {
     out.push({
       kind: "aria",
       value: `role=${node.role}[name='${cssEscape(node.name)}']`,
-      score: rankSelector({ semantic: 0.95, stability: 0.85, uniqueness: 0.6, resilience: 0.8 })
+      score: rankSelector({ semantic: 0.95, stability: 0.85, uniqueness: 0.6, resilience: 0.8 }),
+      reason: "Primary semantic selector derived from role+accessible name."
     });
   }
 
@@ -20,7 +21,8 @@ function fromRoleName(node: SemanticNode): SelectorCandidate[] {
     out.push({
       kind: "xpath",
       value: `//button[normalize-space(text())='${cssEscape(node.name)}']`,
-      score: rankSelector({ semantic: 0.7, stability: 0.5, uniqueness: 0.5, resilience: 0.4 })
+      score: rankSelector({ semantic: 0.7, stability: 0.5, uniqueness: 0.5, resilience: 0.4 }),
+      reason: "Text-based fallback for button interaction when role locator fails."
     });
   }
 

@@ -4,6 +4,7 @@ export interface SelectorCandidate {
   kind: SelectorKind;
   value: string;
   score: number;
+  reason?: string;
 }
 
 export interface BoundingBox {

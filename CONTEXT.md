@@ -54,3 +54,16 @@ Build a browser-context intelligence layer that gives coding agents structured s
   - DOM geometry extraction
   - AX+DOM fusion
 - Exported fusion helpers from package entrypoint.
+
+### Commit 5 - Agent Contract Layer + Selector Plan Diagnostics (in progress)
+- Added `src/runtime/contracts.ts` with stable request/response contracts for:
+  - `observePage`
+  - `findTargets`
+  - `getSelectorPlan`
+- Extended selector candidates with optional `reason` metadata.
+- Enhanced selector generation with explicit rationale for primary/fallback candidates.
+- Updated `BrowserCognitionService`:
+  - `observePage(page, request)` now supports context mode+budget in one call.
+  - Added `findTargetsTool(...)` contract response wrapper (`matches`, `count`).
+  - `getSelectorPlan(...)` now returns ordered selector plan + fallback chain.
+- Exported runtime contracts from package entrypoint.
