@@ -1,0 +1,19 @@
+{
+  "name": "browser-cognition-prototype",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "demo": "tsx examples/demo.ts"
+  },
+  "dependencies": {
+    "playwright": "^1.54.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "tsx": "^4.19.2",
+    "@types/node": "^22.10.1"
+  }
+}
