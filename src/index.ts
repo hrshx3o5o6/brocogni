@@ -22,3 +22,5 @@ export async function observeSemanticState(page: Page): Promise<SemanticPageStat
 export * from "./types/schema.js";
 export * from "./context/compiler.js";
 export * from "./selector/rank.js";
+export * from "./selector/generate.js";
+export * from "./runtime/service.js";

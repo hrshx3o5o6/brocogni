@@ -1,4 +1,5 @@
 import type { SemanticNode } from "../types/schema.js";
+import { generateSelectorCandidates } from "../selector/generate.js";
 
 const ACTIONABLE_ROLES = new Set([
   "button",
@@ -33,18 +34,30 @@ export function axToSemanticNodes(axTree: any): SemanticNode[] {
       (p: any) => p?.name === "disabled" && p?.value?.value === true
     );
 
-    semantic.push({
+    const attributes: Record<string, string> = {};
+    for (const prop of node?.properties ?? []) {
+      const k = prop?.name;
+      const v = prop?.value?.value;
+      if (k && v !== undefined) attributes[String(k)] = String(v);
+    }
+
+    const semanticNode: SemanticNode = {
       id,
       role,
       name,
       purpose: inferPurpose(role, name),
-      visible: true,
+      visible: attributes.hidden !== "true",
       enabled: !disabled,
-      confidence: 0.7,
+      confidence: name ? 0.82 : 0.7,
       bbox: undefined,
       selectors: [],
-      attributes: {}
-    });
+      attributes,
+      frameId: node?.frameId ? String(node.frameId) : undefined,
+      source: "ax"
+    };
+
+    semanticNode.selectors = generateSelectorCandidates(semanticNode);
+    semantic.push(semanticNode);
   }
 
   return semantic;

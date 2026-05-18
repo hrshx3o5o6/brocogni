@@ -24,6 +24,8 @@ export interface SemanticNode {
   bbox?: BoundingBox;
   selectors: SelectorCandidate[];
   attributes: Record<string, string>;
+  frameId?: string;
+  source: "ax" | "dom" | "fused";
 }
 
 export interface PageSummary {

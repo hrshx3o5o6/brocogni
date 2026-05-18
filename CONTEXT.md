@@ -32,3 +32,14 @@ Build a browser-context intelligence layer that gives coding agents structured s
 3. Add iframe/shadow provenance metadata for each semantic node.
 4. Define stable JSON contracts for MCP tool exposure.
 5. Add deterministic fixture-based tests for semantic output stability.
+
+### Commit 3 - Semantic Node Enrichment (in progress)
+- Added semantic node provenance metadata:
+  - `source` (`ax` | `dom` | `fused`)
+  - optional `frameId`
+- Improved AX inference:
+  - captures AX properties into `attributes`
+  - visibility inferred from AX `hidden` property
+  - confidence boosted when accessible name is present
+- Selector generation is now attached during inference (not left empty).
+- Exported selector generation and runtime service from package entrypoint.
