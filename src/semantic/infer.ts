@@ -35,6 +35,9 @@ export function axToSemanticNodes(axTree: any): SemanticNode[] {
     );
 
     const attributes: Record<string, string> = {};
+    if (node?.backendDOMNodeId !== undefined) {
+      attributes.backendDOMNodeId = String(node.backendDOMNodeId);
+    }
     for (const prop of node?.properties ?? []) {
       const k = prop?.name;
       const v = prop?.value?.value;

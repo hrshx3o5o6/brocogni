@@ -41,6 +41,11 @@ export interface SemanticPageState {
   nodes: SemanticNode[];
 }
 
+export interface DomGeometry {
+  backendNodeId: number;
+  bbox: BoundingBox;
+}
+
 export interface RawCapture {
   domSnapshot: unknown;
   axTree: unknown;

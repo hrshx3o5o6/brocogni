@@ -43,3 +43,14 @@ Build a browser-context intelligence layer that gives coding agents structured s
   - confidence boosted when accessible name is present
 - Selector generation is now attached during inference (not left empty).
 - Exported selector generation and runtime service from package entrypoint.
+
+### Commit 4 - DOM Geometry Fusion (in progress)
+- Added `src/semantic/fuse.ts`:
+  - `extractDomGeometry(domSnapshot)` to extract `backendNodeId -> bbox` from CDP DOMSnapshot layout data.
+  - `fuseAxWithDomGeometry(nodes, domGeometry)` to attach bounding boxes to AX-derived semantic nodes.
+- Updated AX inference to preserve `backendDOMNodeId` in node attributes.
+- Updated observer pipeline in `src/index.ts` to run:
+  - AX inference
+  - DOM geometry extraction
+  - AX+DOM fusion
+- Exported fusion helpers from package entrypoint.
