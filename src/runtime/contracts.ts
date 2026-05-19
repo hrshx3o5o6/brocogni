@@ -32,3 +32,16 @@ export interface SelectorPlanResponse {
   }>;
   fallbackChain: string[];
 }
+
+export interface VerifyActionRequest {
+  nodeId: string;
+  action: "click" | "fill" | "press" | "select";
+}
+
+export interface VerifyActionResponse {
+  nodeId: string;
+  action: "click" | "fill" | "press" | "select";
+  canAct: boolean;
+  preconditions: string[];
+  failedChecks: string[];
+}

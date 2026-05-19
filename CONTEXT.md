@@ -77,3 +77,16 @@ Build a browser-context intelligence layer that gives coding agents structured s
 - Updated `npm test` flow to be sandbox-safe and deterministic:
   - `npm run build && node --test dist/test/**/*.test.js`
 - Verified: typecheck and tests both pass.
+
+### Commit 7 - Provenance + Action Verification Hooks (in progress)
+- Extended `SemanticNode` with `inShadowTree` provenance flag.
+- Added shadow-tree inference in AX reducer using available node/property signals.
+- Added runtime action verification contracts in `src/runtime/contracts.ts`:
+  - `VerifyActionRequest`
+  - `VerifyActionResponse`
+- Added `verifyAction(...)` in service to preflight actionability checks:
+  - `visible`
+  - `enabled`
+  - selector availability
+  - action-role compatibility checks (`supports_fill`, click intent guard)
+- Extended deterministic tests to cover provenance and action verification behavior.

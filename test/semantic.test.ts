@@ -40,10 +40,11 @@ test("axToSemanticNodes extracts actionable semantics and selector candidates", 
   assert.ok(submit);
   assert.equal(submit.role, "button");
   assert.equal(submit.purpose, "form_submission");
-  assert.equal(submit.enabled, true);
-  assert.equal(submit.source, "ax");
-  assert.equal(submit.frameId, "main-frame");
-  assert.ok(submit.selectors.length > 0);
+      assert.equal(submit.enabled, true);
+      assert.equal(submit.source, "ax");
+      assert.equal(submit.frameId, "main-frame");
+      assert.equal(submit.inShadowTree, false);
+      assert.ok(submit.selectors.length > 0);
 
   const search = nodes.find((n) => n.name === "Search");
   assert.ok(search);
@@ -83,6 +84,7 @@ test("dom geometry is extracted and fused into semantic nodes", () => {
         confidence: 0.8,
         selectors: [],
         attributes: { backendDOMNodeId: "101" },
+        inShadowTree: false,
         source: "ax"
       }
     ],
@@ -118,6 +120,7 @@ test("service contracts provide deterministic target and selector planning", () 
           { kind: "xpath", value: "//button[text()='Submit']", score: 0.5, reason: "fallback" }
         ],
         attributes: {},
+        inShadowTree: false,
         source: "fused"
       },
       {
@@ -130,6 +133,7 @@ test("service contracts provide deterministic target and selector planning", () 
         confidence: 0.8,
         selectors: [],
         attributes: {},
+        inShadowTree: false,
         source: "ax"
       }
     ]
@@ -144,4 +148,11 @@ test("service contracts provide deterministic target and selector planning", () 
   assert.equal(plan.nodeId, "n1");
   assert.equal(plan.selectors.length, 2);
   assert.deepEqual(plan.fallbackChain, ["//button[text()='Submit']"]);
+
+  const clickCheck = service.verifyAction(state, { nodeId: "n1", action: "click" });
+  assert.equal(clickCheck.canAct, true);
+
+  const fillCheck = service.verifyAction(state, { nodeId: "n1", action: "fill" });
+  assert.equal(fillCheck.canAct, false);
+  assert.ok(fillCheck.failedChecks.includes("supports_fill"));
 });

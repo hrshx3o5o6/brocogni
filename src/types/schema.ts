@@ -26,6 +26,7 @@ export interface SemanticNode {
   selectors: SelectorCandidate[];
   attributes: Record<string, string>;
   frameId?: string;
+  inShadowTree: boolean;
   source: "ax" | "dom" | "fused";
 }
 

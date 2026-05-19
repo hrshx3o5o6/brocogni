@@ -20,6 +20,14 @@ function inferPurpose(role: string, name?: string): string | undefined {
   return undefined;
 }
 
+function inferShadowTree(node: any): boolean {
+  if (node?.isInShadowTree === true) return true;
+  return (node?.properties ?? []).some((p: any) => {
+    const key = String(p?.name ?? "").toLowerCase();
+    return key.includes("shadow") && p?.value?.value === true;
+  });
+}
+
 export function axToSemanticNodes(axTree: any): SemanticNode[] {
   const nodes = Array.isArray(axTree?.nodes) ? axTree.nodes : [];
   const semantic: SemanticNode[] = [];
@@ -56,6 +64,7 @@ export function axToSemanticNodes(axTree: any): SemanticNode[] {
       selectors: [],
       attributes,
       frameId: node?.frameId ? String(node.frameId) : undefined,
+      inShadowTree: inferShadowTree(node),
       source: "ax"
     };
 

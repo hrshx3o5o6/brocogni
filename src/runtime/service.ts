@@ -8,7 +8,9 @@ import type {
   FindTargetsResponse,
   ObservePageRequest,
   ObservePageResponse,
-  SelectorPlanResponse
+  SelectorPlanResponse,
+  VerifyActionRequest,
+  VerifyActionResponse
 } from "./contracts.js";
 
 export interface FindTargetsQuery {
@@ -58,5 +60,42 @@ export class BrowserCognitionService {
     const fallbackChain = selectors.slice(1).map((selector) => selector.value);
 
     return { nodeId, selectors, fallbackChain };
+  }
+
+  public verifyAction(state: SemanticPageState, request: VerifyActionRequest): VerifyActionResponse {
+    const node = state.nodes.find((entry) => entry.id === request.nodeId);
+    if (!node) {
+      return {
+        nodeId: request.nodeId,
+        action: request.action,
+        canAct: false,
+        preconditions: ["node_exists"],
+        failedChecks: ["node_exists"]
+      };
+    }
+
+    const preconditions = ["visible", "enabled", "has_selector_candidates"];
+    const failedChecks: string[] = [];
+    if (!node.visible) failedChecks.push("visible");
+    if (!node.enabled) failedChecks.push("enabled");
+    if (node.selectors.length === 0) failedChecks.push("has_selector_candidates");
+
+    if (request.action === "fill" && node.role !== "textbox" && node.role !== "combobox") {
+      failedChecks.push("supports_fill");
+      preconditions.push("supports_fill");
+    }
+
+    if (request.action === "click" && node.role === "textbox") {
+      failedChecks.push("supports_click_intent");
+      preconditions.push("supports_click_intent");
+    }
+
+    return {
+      nodeId: request.nodeId,
+      action: request.action,
+      canAct: failedChecks.length === 0,
+      preconditions,
+      failedChecks
+    };
   }
 }
