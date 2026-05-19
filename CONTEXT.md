@@ -67,3 +67,13 @@ Build a browser-context intelligence layer that gives coding agents structured s
   - Added `findTargetsTool(...)` contract response wrapper (`matches`, `count`).
   - `getSelectorPlan(...)` now returns ordered selector plan + fallback chain.
 - Exported runtime contracts from package entrypoint.
+
+### Commit 6 - Deterministic Test Harness + CI-Safe Runner (in progress)
+- Added deterministic unit tests in `test/semantic.test.ts` covering:
+  - AX semantic extraction + purpose inference + selector candidate presence.
+  - DOM geometry extraction and AX/DOM fusion behavior.
+  - Service contract behavior for target finding and selector plan generation.
+- Added test build inclusion in `tsconfig.json`.
+- Updated `npm test` flow to be sandbox-safe and deterministic:
+  - `npm run build && node --test dist/test/**/*.test.js`
+- Verified: typecheck and tests both pass.
