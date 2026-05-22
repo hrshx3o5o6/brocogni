@@ -35,12 +35,12 @@ export interface SelectorPlanResponse {
 
 export interface VerifyActionRequest {
   nodeId: string;
-  action: "click" | "fill" | "press" | "select";
+  action: "click" | "fill" | "press" | "select" | "hover";
 }
 
 export interface VerifyActionResponse {
   nodeId: string;
-  action: "click" | "fill" | "press" | "select";
+  action: "click" | "fill" | "press" | "select" | "hover";
   canAct: boolean;
   preconditions: string[];
   failedChecks: string[];

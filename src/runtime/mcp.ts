@@ -74,26 +74,26 @@ const TOOLS = [
   },
   {
     name: "browser_verify",
-    description: "Run safety action verification on a semantic node to confirm if it supports click/fill and is interactable.",
+    description: "Run safety action verification on a semantic node to confirm if it supports click/fill/hover and is interactable.",
     inputSchema: {
       type: "object",
       properties: {
         state: { type: "object", description: "The current SemanticPageState." },
         nodeId: { type: "string", description: "The ID of the semantic node to verify." },
-        action: { type: "string", enum: ["click", "fill", "press", "select"], description: "The action intent." }
+        action: { type: "string", enum: ["click", "fill", "press", "select", "hover"], description: "The action intent." }
       },
       required: ["state", "nodeId", "action"]
     }
   },
   {
     name: "browser_act",
-    description: "Execute an action (click, fill) on a node using its ID. Ensures high stability using pre-baked selector fallback chains.",
+    description: "Execute an action (click, fill, hover) on a node using its ID. Ensures high stability using pre-baked selector fallback chains.",
     inputSchema: {
       type: "object",
       properties: {
         state: { type: "object", description: "The current SemanticPageState to locate the node and its selector fallback chain." },
         nodeId: { type: "string", description: "The ID of the semantic node." },
-        action: { type: "string", enum: ["click", "fill"], description: "The action to execute." },
+        action: { type: "string", enum: ["click", "fill", "hover"], description: "The action to execute." },
         text: { type: "string", description: "The text value to fill (required if action is 'fill')." }
       },
       required: ["state", "nodeId", "action"]
@@ -223,6 +223,8 @@ async function executeTool(name: string, args: any): Promise<string> {
             await locator.click();
           } else if (action === "fill") {
             await locator.fill(text ?? "");
+          } else if (action === "hover") {
+            await locator.hover();
           }
           success = true;
           break;
