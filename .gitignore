@@ -3,3 +3,4 @@ dist/
 .playwright/
 .DS_Store
 examples
+.antigravitycli

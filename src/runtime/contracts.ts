@@ -45,3 +45,14 @@ export interface VerifyActionResponse {
   preconditions: string[];
   failedChecks: string[];
 }
+
+export interface ObserveDeltaRequest {
+  oldState: SemanticPageState;
+  newState: SemanticPageState;
+}
+
+export interface ObserveDeltaResponse {
+  added: SemanticNode[];
+  removed: SemanticNode[];
+  modified: SemanticNode[];
+}

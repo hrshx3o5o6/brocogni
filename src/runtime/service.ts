@@ -10,8 +10,11 @@ import type {
   ObservePageResponse,
   SelectorPlanResponse,
   VerifyActionRequest,
-  VerifyActionResponse
+  VerifyActionResponse,
+  ObserveDeltaRequest,
+  ObserveDeltaResponse
 } from "./contracts.js";
+import { computeDelta } from "./delta.js";
 
 export interface FindTargetsQuery {
   role?: string;
@@ -60,6 +63,10 @@ export class BrowserCognitionService {
     const fallbackChain = selectors.slice(1).map((selector) => selector.value);
 
     return { nodeId, selectors, fallbackChain };
+  }
+
+  public observeDelta(request: ObserveDeltaRequest): ObserveDeltaResponse {
+    return computeDelta(request.oldState, request.newState);
   }
 
   public verifyAction(state: SemanticPageState, request: VerifyActionRequest): VerifyActionResponse {

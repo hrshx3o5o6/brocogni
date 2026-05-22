@@ -68,8 +68,12 @@ export function axToSemanticNodes(axTree: any): SemanticNode[] {
       source: "ax"
     };
 
-    semanticNode.selectors = generateSelectorCandidates(semanticNode);
     semantic.push(semanticNode);
+  }
+
+  // Second pass to generate selector candidates with context of structural neighbors
+  for (let i = 0; i < semantic.length; i++) {
+    semantic[i].selectors = generateSelectorCandidates(semantic[i], semantic, i);
   }
 
   return semantic;
