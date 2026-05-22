@@ -1,8 +1,11 @@
 {
   "name": "browser-cognition-prototype",
   "version": "0.1.0",
-  "private": true,
+  "private": false,
   "type": "module",
+  "bin": {
+    "browser-cognition-mcp": "./dist/runtime/mcp.js"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",
