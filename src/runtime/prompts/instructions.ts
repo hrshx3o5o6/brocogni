@@ -24,7 +24,7 @@ Standard accessibility trees omit collapsed menus, tooltips, and dynamic dropdow
 * If you see elements with \`"expanded": "false"\` or \`"haspopup": "true"\`, trigger them.
 * Use \`browser_act\` with a \`hover\` or \`click\` action on the trigger node (you do not need to pass the \`state\` parameter; it defaults to the cached server-side state).
 * Call \`browser_observe\` again to analyze the updated page.
-* Call \`browser_delta\` passing the old state and the new state to isolate exactly what menu items or dialog elements appeared.
+* Call \`browser_delta\` (omitting parameters; it automatically compares the state before the interaction with the state after the interaction in the server's cache) to isolate exactly what menu items or dialog elements appeared.
 
 ### 4. Extracting High-Reliability Locators
 Do not guess or copy fragile CSS paths or text contents:

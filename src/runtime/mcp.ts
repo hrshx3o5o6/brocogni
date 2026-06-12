@@ -11,6 +11,7 @@ let browserInstance: Browser | null = null;
 let contextInstance: BrowserContext | null = null;
 let pageInstance: Page | null = null;
 let lastState: SemanticPageState | null = null;
+let previousState: SemanticPageState | null = null;
 
 async function getOrCreatePage(): Promise<Page> {
   if (!browserInstance) {
@@ -64,14 +65,13 @@ const TOOLS = [
   },
   {
     name: "browser_delta",
-    description: "Compute the difference between a previous semantic state and a new semantic state (useful to identify dropdown listings/updates after interaction).",
+    description: "Compute the difference between two semantic states. Optional: pass parameters if querying offline; otherwise defaults to comparing the last two observed page states in memory.",
     inputSchema: {
       type: "object",
       properties: {
-        oldState: { type: "object", description: "The previous SemanticPageState." },
-        newState: { type: "object", description: "The current SemanticPageState." }
-      },
-      required: ["oldState", "newState"]
+        oldState: { type: "object", description: "The previous SemanticPageState (optional, falls back to server-side cache)." },
+        newState: { type: "object", description: "The current SemanticPageState (optional, falls back to server-side cache)." }
+      }
     }
   },
   {
@@ -238,12 +238,18 @@ async function executeTool(name: string, args: any): Promise<string> {
     case "browser_observe": {
       const page = await getOrCreatePage();
       const response = await service.observePage(page, args);
+      previousState = lastState;
       lastState = response.state;
       return JSON.stringify(response.state);
     }
 
     case "browser_delta": {
-      const response = service.observeDelta(args);
+      const oldState = args.oldState || previousState;
+      const newState = args.newState || lastState;
+      if (!oldState || !newState) {
+        throw new Error("Cannot compute delta: must have at least two observed states cached. Please run browser_observe before and after your page interaction.");
+      }
+      const response = service.observeDelta({ oldState, newState });
       return JSON.stringify(response);
     }
 

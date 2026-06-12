@@ -131,6 +131,21 @@ async function run() {
     }
     console.log("");
 
+    // Test parameterless browser_delta by creating a second cached state
+    console.log("👉 Refreshing page content slightly to cache second state...");
+    await sendRequest("tools/call", {
+      name: "browser_observe",
+      arguments: { mode: "action", budget: 10 }
+    });
+
+    console.log("👉 Calling [browser_delta] (omitting oldState and newState)...");
+    const deltaRes = await sendRequest("tools/call", {
+      name: "browser_delta",
+      arguments: {} // states are omitted!
+    });
+    const deltaOutput = JSON.parse(deltaRes.content[0].text);
+    console.log("✅ Delta computed using cached states! Added:", deltaOutput.added.length, "Removed:", deltaOutput.removed.length, "Modified:", deltaOutput.modified.length, "\n");
+
     // 6. Test browser_find_targets to search cached state server-side
     console.log("👉 Calling [browser_find_targets] to find 'Learn more' link...");
     const findRes = await sendRequest("tools/call", {
