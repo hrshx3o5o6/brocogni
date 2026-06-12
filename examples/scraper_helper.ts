@@ -68,7 +68,7 @@ async function main() {
   console.log(`🔍 Found ${initialState.nodes.length} semantic elements on the page.`);
   
   // Try to find ratings in initial state
-  const initialRatings = initialState.nodes.filter(n => n.name.includes("Rating"));
+  const initialRatings = initialState.nodes.filter(n => n.name?.includes("Rating"));
   console.log(`📊 Ratings in initial DOM: ${initialRatings.length} found. (They are lazily-rendered!)`);
   
   // ----------------------------------------------------
@@ -80,7 +80,7 @@ async function main() {
   // Instead of hardcoding ".card", we find headings/titles and their surrounding group nodes
   const cards = initialState.nodes.filter(
     node => (node.role === "heading" || node.role === "text" || node.role === "generic") && 
-            (node.name.includes("Hub") || node.name.includes("Soundbar"))
+            (node.name?.includes("Hub") || node.name?.includes("Soundbar"))
   );
 
   for (const card of cards) {
@@ -107,7 +107,7 @@ async function main() {
     
     console.log(`   ✨ Elements revealed:`);
     delta.added.forEach(node => {
-      if (node.name.trim()) {
+      if (node.name?.trim()) {
         console.log(`      • [+ ${node.role}] "${node.name}"`);
       }
     });
@@ -120,7 +120,7 @@ async function main() {
   
   // Find target button
   const { state: finalState } = await cognition.observePage(page);
-  const purchaseButton = finalState.nodes.find(n => n.role === "button" && n.name.includes("Buy Hub"));
+  const purchaseButton = finalState.nodes.find(n => n.role === "button" && n.name?.includes("Buy Hub"));
   
   if (purchaseButton) {
     console.log(`Found target: "${purchaseButton.name}"`);

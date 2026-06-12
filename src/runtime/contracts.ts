@@ -22,6 +22,11 @@ export interface FindTargetsResponse {
   count: number;
 }
 
+export interface GetSelectorPlanRequest {
+  state: SemanticPageState;
+  nodeId: string;
+}
+
 export interface SelectorPlanResponse {
   nodeId: string;
   selectors: Array<{
@@ -31,6 +36,14 @@ export interface SelectorPlanResponse {
     reason: string;
   }>;
   fallbackChain: string[];
+}
+
+export interface ScreenshotRequest {
+  fullPage?: boolean;
+}
+
+export interface ScreenshotResponse {
+  screenshot: string; // Base64 encoded PNG string
 }
 
 export interface VerifyActionRequest {

@@ -87,11 +87,24 @@ async function run() {
     const toolsRes = await sendRequest("tools/list");
     console.log("✅ Available Tools List:");
     toolsRes.tools.forEach((tool) => {
-      console.log(`   - 🛠️  ${tool.name.padEnd(20)}: ${tool.description}`);
+      console.log(`   - 🛠️  ${tool.name.padEnd(25)}: ${tool.description}`);
     });
     console.log("");
 
-    // 3. Navigate to a test website
+    // 3. Test Prompts API
+    console.log("👉 Sending [prompts/list] request...");
+    const promptsRes = await sendRequest("prompts/list");
+    console.log("✅ Available Prompts List:");
+    promptsRes.prompts.forEach((prompt) => {
+      console.log(`   - 📝  ${prompt.name.padEnd(30)}: ${prompt.description}`);
+    });
+    console.log("");
+
+    console.log("👉 Sending [prompts/get] request for 'write-robust-playwright-script'...");
+    const promptRes = await sendRequest("prompts/get", { name: "write-robust-playwright-script" });
+    console.log("✅ Prompt received! Length:", promptRes.messages[0].content.text.length, "chars.\n");
+
+    // 4. Navigate to a test website
     const testUrl = "https://example.com";
     console.log(`👉 Calling [browser_navigate] to "${testUrl}"...`);
     const navRes = await sendRequest("tools/call", {
@@ -101,7 +114,7 @@ async function run() {
     const navOutput = JSON.parse(navRes.content[0].text);
     console.log("✅ Navigation Result:", navOutput, "\n");
 
-    // 4. Observe the semantic layout
+    // 5. Observe the semantic layout
     console.log("👉 Calling [browser_observe] to fetch simplified semantic layout...");
     const obsRes = await sendRequest("tools/call", {
       name: "browser_observe",
@@ -109,8 +122,8 @@ async function run() {
     });
     const obsOutput = JSON.parse(obsRes.content[0].text);
     console.log("✅ Semantic Observation Elements:");
-    if (obsOutput && Array.isArray(obsOutput.elements)) {
-      obsOutput.elements.forEach((el) => {
+    if (obsOutput && Array.isArray(obsOutput.nodes)) {
+      obsOutput.nodes.forEach((el) => {
         console.log(`   • [ID: ${el.id}] <${el.role}> "${el.name}"${el.attributes ? ` ${JSON.stringify(el.attributes)}` : ""}`);
       });
     } else {
@@ -118,7 +131,38 @@ async function run() {
     }
     console.log("");
 
-    console.log("✨ All standard JSON-RPC operations completed successfully over stdio channels!");
+    // 6. Test browser_get_selector_plan for the first node if available
+    if (obsOutput && Array.isArray(obsOutput.nodes) && obsOutput.nodes.length > 0) {
+      const targetNode = obsOutput.nodes[0];
+      console.log(`👉 Calling [browser_get_selector_plan] for Node ID "${targetNode.id}"...`);
+      const planRes = await sendRequest("tools/call", {
+        name: "browser_get_selector_plan",
+        arguments: { state: obsOutput, nodeId: targetNode.id }
+      });
+      const planOutput = JSON.parse(planRes.content[0].text);
+      console.log("✅ Selector Plan Output:");
+      console.log(`   Node: ${planOutput.nodeId}`);
+      console.log(`   Selectors Count: ${planOutput.selectors.length}`);
+      planOutput.selectors.forEach((sel, i) => {
+        console.log(`   ${i + 1}. [${sel.kind.toUpperCase()}] "${sel.value}" (${sel.reason})`);
+      });
+      console.log("");
+    }
+
+    // 7. Test browser_screenshot
+    console.log("👉 Calling [browser_screenshot]...");
+    const snapRes = await sendRequest("tools/call", {
+      name: "browser_screenshot",
+      arguments: { fullPage: false }
+    });
+    const snapOutput = JSON.parse(snapRes.content[0].text);
+    if (snapOutput && snapOutput.screenshot) {
+      console.log("✅ Screenshot captured successfully! Base64 length:", snapOutput.screenshot.length, "bytes.\n");
+    } else {
+      console.log("❌ Failed to capture screenshot.\n");
+    }
+
+    console.log("✨ All custom and standard JSON-RPC operations completed successfully over stdio channels!");
   } catch (error) {
     console.error("❌ Test encountered an error:", error);
   } finally {

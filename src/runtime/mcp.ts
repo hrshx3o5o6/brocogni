@@ -3,6 +3,7 @@ import * as readline from "node:readline";
 import { chromium, Browser, BrowserContext, Page } from "playwright";
 import { BrowserCognitionService } from "./service.js";
 import { observeSemanticState } from "../index.js";
+import { AGENT_INSTRUCTIONS } from "./prompts/instructions.js";
 
 const service = new BrowserCognitionService();
 
@@ -98,6 +99,28 @@ const TOOLS = [
       },
       required: ["state", "nodeId", "action"]
     }
+  },
+  {
+    name: "browser_get_selector_plan",
+    description: "Retrieve the pre-computed selector plan (primary + healed fallback locators) for a specific semantic node on the page.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        state: { type: "object", description: "The current SemanticPageState." },
+        nodeId: { type: "string", description: "The ID of the semantic node." }
+      },
+      required: ["state", "nodeId"]
+    }
+  },
+  {
+    name: "browser_screenshot",
+    description: "Take a screenshot of the current page viewport and return it as a base64 encoded PNG string (useful for visual validation).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        fullPage: { type: "boolean", description: "Take a screenshot of the full scrollable page." }
+      }
+    }
   }
 ];
 
@@ -137,7 +160,8 @@ async function handleRequest(method: string, params: any): Promise<any> {
       return {
         protocolVersion: "2024-11-05",
         capabilities: {
-          tools: {}
+          tools: {},
+          prompts: {}
         },
         serverInfo: {
           name: "browser-cognition-mcp",
@@ -154,6 +178,35 @@ async function handleRequest(method: string, params: any): Promise<any> {
       return {
         content: [{ type: "text", text: resultText }]
       };
+    }
+
+    case "prompts/list":
+      return {
+        prompts: [
+          {
+            name: "write-robust-playwright-script",
+            description: "Guidelines and prompts instructing agents on how to write resilient Playwright scripts using Browser Cognition."
+          }
+        ]
+      };
+
+    case "prompts/get": {
+      const { name } = params || {};
+      if (name === "write-robust-playwright-script") {
+        return {
+          description: "Instructions for writing resilient Playwright automation scripts.",
+          messages: [
+            {
+              role: "user",
+              content: {
+                type: "text",
+                text: AGENT_INSTRUCTIONS
+              }
+            }
+          ]
+        };
+      }
+      throw new Error(`Prompt not found: ${name}`);
     }
 
     default:
@@ -238,6 +291,21 @@ async function executeTool(name: string, args: any): Promise<string> {
       }
 
       return JSON.stringify({ success: true, message: `Successfully executed ${action} on node ${nodeId}` });
+    }
+
+    case "browser_get_selector_plan": {
+      const plan = service.getSelectorPlan(args.state, args.nodeId);
+      if (!plan) {
+        throw new Error(`Node ID not found: ${args.nodeId}`);
+      }
+      return JSON.stringify(plan);
+    }
+
+    case "browser_screenshot": {
+      const page = await getOrCreatePage();
+      const buffer = await page.screenshot({ fullPage: args.fullPage ?? false });
+      const base64 = buffer.toString("base64");
+      return JSON.stringify({ screenshot: base64 });
     }
 
     default:
