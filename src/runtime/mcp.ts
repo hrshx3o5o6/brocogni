@@ -2,7 +2,7 @@
 import * as readline from "node:readline";
 import { chromium, Browser, BrowserContext, Page } from "playwright";
 import { BrowserCognitionService } from "./service.js";
-import { observeSemanticState } from "../index.js";
+import { observeSemanticState, SemanticPageState } from "../index.js";
 import { AGENT_INSTRUCTIONS } from "./prompts/instructions.js";
 
 const service = new BrowserCognitionService();
@@ -10,6 +10,7 @@ const service = new BrowserCognitionService();
 let browserInstance: Browser | null = null;
 let contextInstance: BrowserContext | null = null;
 let pageInstance: Page | null = null;
+let lastState: SemanticPageState | null = null;
 
 async function getOrCreatePage(): Promise<Page> {
   if (!browserInstance) {
@@ -75,41 +76,53 @@ const TOOLS = [
   },
   {
     name: "browser_verify",
-    description: "Run safety action verification on a semantic node to confirm if it supports click/fill/hover and is interactable.",
+    description: "Run safety action verification on a semantic node to confirm if it supports click/fill/hover and is interactable. Optional: pass 'state' if querying offline; otherwise defaults to last observed state.",
     inputSchema: {
       type: "object",
       properties: {
-        state: { type: "object", description: "The current SemanticPageState." },
+        state: { type: "object", description: "The current SemanticPageState (optional, falls back to server-side cache)." },
         nodeId: { type: "string", description: "The ID of the semantic node to verify." },
         action: { type: "string", enum: ["click", "fill", "press", "select", "hover"], description: "The action intent." }
       },
-      required: ["state", "nodeId", "action"]
+      required: ["nodeId", "action"]
     }
   },
   {
     name: "browser_act",
-    description: "Execute an action (click, fill, hover) on a node using its ID. Ensures high stability using pre-baked selector fallback chains.",
+    description: "Execute an action (click, fill, hover) on a node using its ID. Optional: pass 'state' if querying offline; otherwise defaults to last observed state.",
     inputSchema: {
       type: "object",
       properties: {
-        state: { type: "object", description: "The current SemanticPageState to locate the node and its selector fallback chain." },
+        state: { type: "object", description: "The current SemanticPageState (optional, falls back to server-side cache)." },
         nodeId: { type: "string", description: "The ID of the semantic node." },
         action: { type: "string", enum: ["click", "fill", "hover"], description: "The action to execute." },
         text: { type: "string", description: "The text value to fill (required if action is 'fill')." }
       },
-      required: ["state", "nodeId", "action"]
+      required: ["nodeId", "action"]
     }
   },
   {
     name: "browser_get_selector_plan",
-    description: "Retrieve the pre-computed selector plan (primary + healed fallback locators) for a specific semantic node on the page.",
+    description: "Retrieve the pre-computed selector plan (primary + healed fallback locators) for a specific semantic node. Optional: pass 'state' if querying offline; otherwise defaults to last observed state.",
     inputSchema: {
       type: "object",
       properties: {
-        state: { type: "object", description: "The current SemanticPageState." },
+        state: { type: "object", description: "The current SemanticPageState (optional, falls back to server-side cache)." },
         nodeId: { type: "string", description: "The ID of the semantic node." }
       },
-      required: ["state", "nodeId"]
+      required: ["nodeId"]
+    }
+  },
+  {
+    name: "browser_find_targets",
+    description: "Search the last observed page state for nodes matching specific criteria (role, name content, enabled state). Extremely fast and token-efficient.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        role: { type: "string", description: "Filter by accessibility role (e.g. 'button', 'textbox')." },
+        nameIncludes: { type: "string", description: "Filter by substring in the accessible name." },
+        onlyEnabled: { type: "boolean", description: "Filter to only enabled/interactable elements." }
+      }
     }
   },
   {
@@ -225,6 +238,7 @@ async function executeTool(name: string, args: any): Promise<string> {
     case "browser_observe": {
       const page = await getOrCreatePage();
       const response = await service.observePage(page, args);
+      lastState = response.state;
       return JSON.stringify(response.state);
     }
 
@@ -234,12 +248,20 @@ async function executeTool(name: string, args: any): Promise<string> {
     }
 
     case "browser_verify": {
-      const response = service.verifyAction(args.state, { nodeId: args.nodeId, action: args.action });
+      const state = args.state || lastState;
+      if (!state) {
+        throw new Error("No page state available. Please run browser_observe first.");
+      }
+      const response = service.verifyAction(state, { nodeId: args.nodeId, action: args.action });
       return JSON.stringify(response);
     }
 
     case "browser_act": {
-      const { state, nodeId, action, text } = args;
+      const { nodeId, action, text } = args;
+      const state = args.state || lastState;
+      if (!state) {
+        throw new Error("No page state available. Please run browser_observe first.");
+      }
       const page = await getOrCreatePage();
 
       const plan = service.getSelectorPlan(state, nodeId);
@@ -294,11 +316,24 @@ async function executeTool(name: string, args: any): Promise<string> {
     }
 
     case "browser_get_selector_plan": {
-      const plan = service.getSelectorPlan(args.state, args.nodeId);
+      const state = args.state || lastState;
+      if (!state) {
+        throw new Error("No page state available. Please run browser_observe first.");
+      }
+      const plan = service.getSelectorPlan(state, args.nodeId);
       if (!plan) {
         throw new Error(`Node ID not found: ${args.nodeId}`);
       }
       return JSON.stringify(plan);
+    }
+
+    case "browser_find_targets": {
+      const state = args.state || lastState;
+      if (!state) {
+        throw new Error("No page state available. Please run browser_observe first.");
+      }
+      const response = service.findTargetsTool(state, args);
+      return JSON.stringify(response);
     }
 
     case "browser_screenshot": {

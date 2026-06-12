@@ -131,23 +131,38 @@ async function run() {
     }
     console.log("");
 
-    // 6. Test browser_get_selector_plan for the first node if available
-    if (obsOutput && Array.isArray(obsOutput.nodes) && obsOutput.nodes.length > 0) {
-      const targetNode = obsOutput.nodes[0];
-      console.log(`👉 Calling [browser_get_selector_plan] for Node ID "${targetNode.id}"...`);
-      const planRes = await sendRequest("tools/call", {
-        name: "browser_get_selector_plan",
-        arguments: { state: obsOutput, nodeId: targetNode.id }
+    // 6. Test browser_find_targets to search cached state server-side
+    console.log("👉 Calling [browser_find_targets] to find 'Learn more' link...");
+    const findRes = await sendRequest("tools/call", {
+      name: "browser_find_targets",
+      arguments: { role: "link", nameIncludes: "Learn" }
+    });
+    const findOutput = JSON.parse(findRes.content[0].text);
+    console.log("✅ Find Targets Result:");
+    if (findOutput && Array.isArray(findOutput.matches)) {
+      findOutput.matches.forEach((el) => {
+        console.log(`   • [ID: ${el.id}] <${el.role}> "${el.name}"`);
       });
-      const planOutput = JSON.parse(planRes.content[0].text);
-      console.log("✅ Selector Plan Output:");
-      console.log(`   Node: ${planOutput.nodeId}`);
-      console.log(`   Selectors Count: ${planOutput.selectors.length}`);
-      planOutput.selectors.forEach((sel, i) => {
-        console.log(`   ${i + 1}. [${sel.kind.toUpperCase()}] "${sel.value}" (${sel.reason})`);
-      });
-      console.log("");
+
+      if (findOutput.matches.length > 0) {
+        const targetNode = findOutput.matches[0];
+        // Test browser_get_selector_plan WITHOUT state parameter!
+        console.log(`\n👉 Calling [browser_get_selector_plan] for Node ID "${targetNode.id}" (omitting state)...`);
+        const planRes = await sendRequest("tools/call", {
+          name: "browser_get_selector_plan",
+          arguments: { nodeId: targetNode.id } // state is omitted!
+        });
+        const planOutput = JSON.parse(planRes.content[0].text);
+        console.log("✅ Selector Plan Output (from cached state):");
+        console.log(`   Node: ${planOutput.nodeId}`);
+        planOutput.selectors.forEach((sel, i) => {
+          console.log(`   ${i + 1}. [${sel.kind.toUpperCase()}] "${sel.value}"`);
+        });
+      }
+    } else {
+      console.log("   ", JSON.stringify(findOutput));
     }
+    console.log("");
 
     // 7. Test browser_screenshot
     console.log("👉 Calling [browser_screenshot]...");
