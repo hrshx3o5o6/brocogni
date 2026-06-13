@@ -23,7 +23,7 @@ export interface FindTargetsResponse {
 }
 
 export interface GetSelectorPlanRequest {
-  state: SemanticPageState;
+  state?: SemanticPageState; // Made optional for server-side fallback
   nodeId: string;
 }
 
@@ -47,6 +47,7 @@ export interface ScreenshotResponse {
 }
 
 export interface VerifyActionRequest {
+  state?: SemanticPageState; // Added as optional for server-side fallback
   nodeId: string;
   action: "click" | "fill" | "press" | "select" | "hover";
 }
@@ -59,9 +60,17 @@ export interface VerifyActionResponse {
   failedChecks: string[];
 }
 
+// New interface for 'browser_act' for clarity and type safety
+export interface ActRequest {
+  state?: SemanticPageState; // Added as optional for server-side fallback
+  nodeId: string;
+  action: "click" | "fill" | "hover";
+  text?: string; // Required if action is 'fill'
+}
+
 export interface ObserveDeltaRequest {
-  oldState: SemanticPageState;
-  newState: SemanticPageState;
+  oldState?: SemanticPageState; // Made optional for server-side fallback
+  newState?: SemanticPageState; // Made optional for server-side fallback
 }
 
 export interface ObserveDeltaResponse {

@@ -24,8 +24,10 @@ export interface FindTargetsQuery {
 }
 
 export class BrowserCognitionService {
+  private _lastObservedState: SemanticPageState | undefined;
   public async observePage(page: Page, request?: ObservePageRequest): Promise<ObservePageResponse> {
     const state = await observeSemanticState(page);
+    this._lastObservedState = state;
     if (!request?.mode) return { state };
     return { state: compileContext(state, request.mode, request.budget ?? 200) };
   }
@@ -66,7 +68,19 @@ export class BrowserCognitionService {
   }
 
   public observeDelta(request: ObserveDeltaRequest): ObserveDeltaResponse {
-    return computeDelta(request.oldState, request.newState);
+    const oldState = request.oldState ?? this._lastObservedState;
+    const newState = request.newState ?? this._lastObservedState;
+
+    if (!oldState || !newState) {
+      throw new Error("Cannot compute delta: insufficient state information. Ensure observePage has been called or provide both oldState and newState in the request.");
+    }
+
+    // Only update _lastObservedState if a new state was explicitly provided in the request
+    if (request.newState) {
+      this._lastObservedState = request.newState;
+    }
+
+    return computeDelta(oldState, newState);
   }
 
   public verifyAction(state: SemanticPageState, request: VerifyActionRequest): VerifyActionResponse {

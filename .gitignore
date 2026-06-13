@@ -4,3 +4,5 @@ dist/
 .DS_Store
 examples
 .antigravitycli
+/tst_files
+test

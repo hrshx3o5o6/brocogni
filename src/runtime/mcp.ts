@@ -134,6 +134,27 @@ const TOOLS = [
         fullPage: { type: "boolean", description: "Take a screenshot of the full scrollable page." }
       }
     }
+  },
+  {
+    name: "browser_evaluate",
+    description: "Execute arbitrary JavaScript code in the page context and return the result. Fast and direct.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        code: { type: "string", description: "JavaScript function body to execute in the page context." }
+      },
+      required: ["code"]
+    }
+  },
+  {
+    name: "browser_save_cookies",
+    description: "Save page cookies to a file for session persistence.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        path: { type: "string", description: "File path to save cookies to (default: session_cookies.json)." }
+      }
+    }
   }
 ];
 
@@ -231,7 +252,9 @@ async function executeTool(name: string, args: any): Promise<string> {
   switch (name) {
     case "browser_navigate": {
       const page = await getOrCreatePage();
-      await page.goto(args.url, { waitUntil: "domcontentloaded" });
+      await page.goto(args.url, { waitUntil: "networkidle", timeout: 30000 });
+      // Wait a bit for JS rendering
+      await page.waitForTimeout(3000);
       return JSON.stringify({ success: true, url: page.url() });
     }
 
@@ -240,7 +263,7 @@ async function executeTool(name: string, args: any): Promise<string> {
       const response = await service.observePage(page, args);
       previousState = lastState;
       lastState = response.state;
-      return JSON.stringify(response.state);
+      return JSON.stringify({ success: true, message: "Page observed and state cached." });
     }
 
     case "browser_delta": {
@@ -299,9 +322,9 @@ async function executeTool(name: string, args: any): Promise<string> {
             locator = page.locator(selector.value);
           }
 
-          await locator.waitFor({ timeout: 3000 });
+          await locator.waitFor({ timeout: 10000 });
           if (action === "click") {
-            await locator.click();
+            await locator.click({ timeout: 10000 });
           } else if (action === "fill") {
             await locator.fill(text ?? "");
           } else if (action === "hover") {
@@ -311,6 +334,18 @@ async function executeTool(name: string, args: any): Promise<string> {
           break;
         } catch (e: any) {
           errorMsg = e?.message || String(e);
+          // Fallback: try force click via JS evaluation
+          try {
+            const el = await page.locator(selector.value).elementHandle();
+            if (el) {
+              await page.evaluate((el) => el.scrollIntoView({ block: "center" }), el);
+              await el.click();
+              success = true;
+              break;
+            }
+          } catch (_) {
+            // continue to next selector
+          }
         }
       }
 
@@ -347,6 +382,42 @@ async function executeTool(name: string, args: any): Promise<string> {
       const buffer = await page.screenshot({ fullPage: args.fullPage ?? false });
       const base64 = buffer.toString("base64");
       return JSON.stringify({ screenshot: base64 });
+    }
+
+    case "browser_info": {
+      const page = await getOrCreatePage();
+      const info = await page.evaluate(() => ({
+        url: location.href,
+        title: document.title,
+        bodyText: document.body?.innerText?.substring(0, 500) ?? "",
+        iframeCount: document.querySelectorAll("iframe").length,
+        mainElementCount: document.querySelectorAll("main, [role='main'], article, section").length,
+      }));
+      return JSON.stringify(info);
+    }
+
+    case "browser_evaluate": {
+      const page = await getOrCreatePage();
+      const result = await page.evaluate((fnBody: string) => {
+        const fn = new Function(fnBody);
+        return fn();
+      }, args.code);
+      return JSON.stringify({ success: true, result });
+    }
+
+    case "browser_save_cookies": {
+      const page = await getOrCreatePage();
+      const cookies = await page.context().cookies();
+      const fs = await import("fs");
+      fs.writeFileSync(args.path ?? "session_cookies.json", JSON.stringify(cookies, null, 2));
+      return JSON.stringify({ success: true, count: cookies.length });
+    }
+
+    case "browser_run_script": {
+      const page = await getOrCreatePage();
+      const cdp = await page.context().newCDPSession(page);
+      const result = await page.evaluate(args.code);
+      return JSON.stringify({ success: true, result });
     }
 
     default:
