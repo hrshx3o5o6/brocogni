@@ -1,7 +1,7 @@
 {
   "name": "browser-cognition-mcp",
   "version": "1.0.1",
-  "description": "Browser Cognition Framework: An intelligent semantic page observer and self-healing selector engine that bridges layout changes and browser automation for AI coding agents.",
+  "description": "Brocogni -- Making Playwright make sense to AI agents. MCP server for semantic browser observation and self-healing selectors.",
   "type": "module",
   "bin": {
     "browser-cognition-mcp": "dist/src/runtime/mcp.js"
@@ -20,6 +20,7 @@
     "test": "npm run build && node --test 'dist/test/**/*.test.js'"
   },
   "keywords": [
+    "brocogni",
     "mcp",
     "model-context-protocol",
     "playwright",
