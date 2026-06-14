@@ -17,7 +17,7 @@
     "check": "tsc --noEmit -p tsconfig.json",
     "start": "node dist/src/runtime/mcp.js",
     "configure": "node bin/configure.js",
-    "test": "npm run build && node --test dist/test/**/*.test.js"
+    "test": "npm run build && node --test 'dist/test/**/*.test.js'"
   },
   "keywords": [
     "mcp",
