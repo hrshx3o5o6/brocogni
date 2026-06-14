@@ -5,7 +5,6 @@ import * as os from "node:os";
 
 const isLocalDev = process.argv.includes("--local");
 
-// Helper for expanding home directories on Unix
 function expandHome(filepath) {
   if (filepath.startsWith("~")) {
     return path.join(os.homedir(), filepath.slice(1));
@@ -13,7 +12,6 @@ function expandHome(filepath) {
   return filepath;
 }
 
-// Locate Claude Desktop Config Path
 function getClaudeConfigPath() {
   const platform = process.platform;
   if (platform === "darwin") {
@@ -25,74 +23,62 @@ function getClaudeConfigPath() {
   return null;
 }
 
-console.log("\x1b[36m%s\x1b[0m", "⚙️  Browser Cognition MCP Installer");
-console.log("-----------------------------------------");
-
-const configPath = getClaudeConfigPath();
-if (!configPath) {
-  console.error("\x1b[31m%s\x1b[0m", "❌ Error: Claude Desktop is only supported on macOS and Windows.");
-  process.exit(1);
-}
-
-console.log(`📂 Target Config File: ${configPath}`);
-
-// Ensure parent directories exist
-const dir = path.dirname(configPath);
-if (!fs.existsSync(dir)) {
-  fs.mkdirSync(dir, { recursive: true });
-}
-
-// Read current config
-let config = {};
-if (fs.existsSync(configPath)) {
-  try {
-    const raw = fs.readFileSync(configPath, "utf8");
-    config = JSON.parse(raw);
-  } catch (err) {
-    console.warn("\x1b[33m%s\x1b[0m", "⚠️  Warning: Existing config file could not be parsed. Initializing new one.");
-  }
-}
-
-// Ensure mcpServers exists
-if (!config.mcpServers) {
-  config.mcpServers = {};
-}
+console.log("\x1b[36m%s\x1b[0m", "Brocogni MCP installer");
+console.log("");
 
 // Prepare configuration block
 let serverBlock = {};
 if (isLocalDev) {
-  // Developer dev mode: point to absolute local path
   const localMcpPath = path.resolve(path.join(import.meta.dirname, "../dist/src/runtime/mcp.js"));
-  console.log(`🔧 Local Dev Mode active. Pointing to: ${localMcpPath}`);
   serverBlock = {
     command: "node",
     args: [localMcpPath]
   };
 } else {
-  // Production global mode: use npx wrapper
-  console.log("📦 Production mode active. Configuring to run via global NPX wrapper...");
   serverBlock = {
     command: "npx",
     args: ["-y", "browser-cognition-mcp"]
   };
 }
 
-config.mcpServers["browser-cognition"] = serverBlock;
+// Try configuring Claude Desktop if available
+const configPath = getClaudeConfigPath();
+if (configPath) {
+  const dir = path.dirname(configPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
 
-// Write updated config file
-try {
+  let config = {};
+  if (fs.existsSync(configPath)) {
+    try {
+      const raw = fs.readFileSync(configPath, "utf8");
+      config = JSON.parse(raw);
+    } catch {
+      console.warn("  Existing config malformed, creating new one.");
+    }
+  }
+
+  if (!config.mcpServers) {
+    config.mcpServers = {};
+  }
+
+  config.mcpServers["brocogni"] = serverBlock;
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
-  console.log("\x1b[32m%s\x1b[0m", "✅ Brocogni registered with Claude Desktop successfully.");
-  console.log("");
-  console.log("👉 Next steps:");
-  console.log("   1. Close and restart Claude Desktop to pick up the new server.");
-  console.log("   2. Make sure Playwright browsers are installed:");
-  console.log("      \x1b[36mnpx playwright install chromium\x1b[0m");
-  console.log("");
-  console.log("   Using Claude Code instead? Run this instead:");
-  console.log("      \x1b[36mclaude mcp add brocogni -- npx -y browser-cognition-mcp\x1b[0m");
-  console.log("   (No restart needed -- it starts on next command.)");
-} catch (err) {
-  console.error("\x1b[31m%s\x1b[0m", `❌ Error writing configuration file: ${err.message}`);
-  process.exit(1);
+  console.log("  Configured for Claude Desktop: " + configPath);
+} else {
+  console.log("  Claude Desktop config path not found on this platform.");
 }
+
+console.log("");
+console.log("Brocogni registered. To connect it to your MCP client:");
+console.log("");
+console.log("  Claude Desktop    Restart the app (already configured)");
+console.log("  Claude Code       claude mcp add brocogni -- npx -y browser-cognition-mcp");
+console.log("  Cursor            Settings -> Features -> MCP -> Add New");
+console.log("                    Name: brocogni | Type: stdio | Cmd: npx -y browser-cognition-mcp");
+console.log("  OpenCode          Auto-detected via opencode.json in project root");
+console.log("");
+console.log("Make sure Playwright browsers are installed:");
+console.log("  npx playwright install chromium");
+console.log("");

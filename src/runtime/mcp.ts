@@ -11,7 +11,7 @@ import { AGENT_INSTRUCTIONS } from "./prompts/instructions.js";
 // Automatic installer/configurator command
 if (process.argv.includes("install") || process.argv.includes("configure") || process.argv.includes("--configure")) {
   const isLocalDev = process.argv.includes("--local");
-  
+
   function expandHome(filepath: string) {
     if (filepath.startsWith("~")) {
       return path.join(os.homedir(), filepath.slice(1));
@@ -19,82 +19,47 @@ if (process.argv.includes("install") || process.argv.includes("configure") || pr
     return filepath;
   }
 
-  function getClaudeConfigPath() {
-    const platform = process.platform;
-    if (platform === "darwin") {
-      return expandHome("~/Library/Application Support/Claude/claude_desktop_config.json");
-    } else if (platform === "win32") {
-      const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
-      return path.join(appData, "Claude", "claude_desktop_config.json");
+  const serverBlock = isLocalDev
+    ? { command: "node", args: [path.resolve("./dist/src/runtime/mcp.js")] }
+    : { command: "npx", args: ["-y", "browser-cognition-mcp"] };
+
+  // Try configuring Claude Desktop if available
+  const platform = process.platform;
+  const configPath = (platform === "darwin")
+    ? expandHome("~/Library/Application Support/Claude/claude_desktop_config.json")
+    : (platform === "win32")
+      ? path.join(process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"), "Claude", "claude_desktop_config.json")
+      : null;
+
+  if (configPath) {
+    const dir = path.dirname(configPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    let config: any = {};
+    if (fs.existsSync(configPath)) {
+      try { config = JSON.parse(fs.readFileSync(configPath, "utf8")); }
+      catch { console.warn("  Existing config malformed, creating new one."); }
     }
-    return null;
-  }
-
-  console.log("\x1b[36m%s\x1b[0m", "⚙️  Browser Cognition MCP Installer");
-  console.log("-----------------------------------------");
-
-  const configPath = getClaudeConfigPath();
-  if (!configPath) {
-    console.error("\x1b[31m%s\x1b[0m", "❌ Error: Claude Desktop is only supported on macOS and Windows.");
-    process.exit(1);
-  }
-
-  console.log(`📂 Target Config File: ${configPath}`);
-
-  const dir = path.dirname(configPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-
-  let config: any = {};
-  if (fs.existsSync(configPath)) {
-    try {
-      const raw = fs.readFileSync(configPath, "utf8");
-      config = JSON.parse(raw);
-    } catch {
-      console.warn("\x1b[33m%s\x1b[0m", "⚠️  Warning: Existing config file could not be parsed. Initializing new one.");
-    }
-  }
-
-  if (!config.mcpServers) {
-    config.mcpServers = {};
-  }
-
-  let serverBlock = {};
-  if (isLocalDev) {
-    // Local dev setup
-    const localMcpPath = path.resolve("./dist/src/runtime/mcp.js");
-    console.log(`🔧 Local Dev Mode active. Pointing to: ${localMcpPath}`);
-    serverBlock = {
-      command: "node",
-      args: [localMcpPath]
-    };
-  } else {
-    // Production npx setup
-    console.log("📦 Production mode active. Configuring to run via global NPX wrapper...");
-    serverBlock = {
-      command: "npx",
-      args: ["-y", "browser-cognition-mcp"]
-    };
-  }
-
-  config.mcpServers["browser-cognition"] = serverBlock;
-
-  try {
+    if (!config.mcpServers) config.mcpServers = {};
+    config.mcpServers["brocogni"] = serverBlock;
     fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
-    console.log("\x1b[32m%s\x1b[0m", "✅ Success! Browser Cognition MCP registered successfully.");
-    console.log("");
-    console.log("👉 Next steps:");
-    console.log("   1. Close and completely restart your Claude Desktop app.");
-    console.log("   2. Verify that Playwright browsers are installed locally:");
-    console.log("      \x1b[36mnpx playwright install chromium\x1b[0m");
-    console.log("   3. Open a chat and verify the browser tools are available.");
-    console.log("");
-    process.exit(0);
-  } catch (err: any) {
-    console.error("\x1b[31m%s\x1b[0m", `❌ Error writing configuration file: ${err.message}`);
-    process.exit(1);
+    console.log("  Configured for Claude Desktop: " + configPath);
+  } else {
+    console.log("  Claude Desktop config path not found on this platform.");
   }
+
+  console.log("");
+  console.log("Brocogni registered. To connect it to your MCP client:");
+  console.log("");
+  console.log("  Claude Desktop    Restart the app (already configured)");
+  console.log("  Claude Code       claude mcp add brocogni -- npx -y browser-cognition-mcp");
+  console.log("  Cursor            Settings -> Features -> MCP -> Add New");
+  console.log("                    Name: brocogni | Type: stdio | Cmd: npx -y browser-cognition-mcp");
+  console.log("  OpenCode          Auto-detected via opencode.json in project root");
+  console.log("");
+  console.log("Make sure Playwright browsers are installed:");
+  console.log("  npx playwright install chromium");
+  console.log("");
+  process.exit(0);
 }
 
 const service = new BrowserCognitionService();
