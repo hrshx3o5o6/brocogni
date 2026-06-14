@@ -130,16 +130,6 @@ Also exposes a `write-robust-playwright-script` prompt that teaches agents how t
 
 ---
 
-## Demos
-
-```bash
-npx tsx examples/project1_ecommerce_scraper.ts    # lazy-rendered reviews
-npx tsx examples/project2_form_verifier.ts        # preflight verification
-npx tsx examples/project3_self_healing_test.ts    # UI refactor survival
-```
-
----
-
 ## Tests
 
 ```bash
