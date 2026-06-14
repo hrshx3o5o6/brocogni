@@ -4,7 +4,7 @@
   "description": "Browser Cognition Framework: An intelligent semantic page observer and self-healing selector engine that bridges layout changes and browser automation for AI coding agents.",
   "type": "module",
   "bin": {
-    "browser-cognition-mcp": "./dist/src/runtime/mcp.js"
+    "browser-cognition-mcp": "dist/src/runtime/mcp.js"
   },
   "files": [
     "dist/",
