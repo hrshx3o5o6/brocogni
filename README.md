@@ -1,112 +1,168 @@
-# Browser Cognition MCP: Agent-First Browser Observability & Self-Healing
+# Browser Cognition MCP
 
-An intelligent semantic page observer and self-healing selector engine that bridges the gap between fragile web layouts and robust browser automation. Built to enable AI coding agents (Claude Code, Cursor, OpenCode, Antigravity) to write bulletproof, zero-dependency Playwright scripts.
+Give your AI agent a browser that it can actually understand.
 
----
+Browser Cognition is an open-source MCP server that bridges AI reasoning engines with live web browsers. Instead of dumping raw HTML into your agent's context (noisy, fragile, token-wasting), it compiles pages into a structured semantic map the agent can navigate, reason about, and act on in real time.
 
-## 💡 The Vision
+**Two ways to use it:**
 
-Most browser automation scripts are incredibly fragile. When an AI assistant or a developer writes code to scrape a page or click a button, they rely on highly specific class names (e.g. `.btn-primary`, `.css-x83kf2`, Tailwind utility classes) or structural selectors. The moment the frontend builds again or classes shift, **the script breaks**.
+1. **Agentic browsing loop** -- The agent uses MCP tools directly: navigate, observe, find targets, click, extract. It iterates, re-reasons, and adapts based on what the page shows. The browser is the environment, the agent is the brain.
 
-**Browser Cognition** provides an **intelligence and selector-healing layer** that translates noisy DOM layouts into a logical, accessibility-first representation. Instead of scraping hardcoded classes, it dynamically analyzes accessibility trees, solves lazy-rendering states, and builds self-healing selector plans on the fly.
+2. **Self-healing script generation** -- The agent observes a page, understands its structure, and generates vanilla Playwright selectors with automatic fallback chains. Your test suite survives frontend rebuilds.
 
-Instead of introducing another heavy runtime dependency to your production code, **Browser Cognition runs during development as a copilot for your AI coding agents.** The agent uses this MCP server to explore the page, find robust relational locators, and then generates standard, vanilla Playwright code.
-
----
-
-## 🚀 Key Capabilities
-
-1. **Logical Accessibility-Tree Observation (`browser_observe`)**
-   * Bypasses thousands of lines of messy DOM div-noise.
-   * Compiles layouts into clean, logical semantic nodes containing accessible names, roles, visibility scores, and physical geometries.
-
-2. **Self-Healing Selector Engine (`browser_get_selector_plan`)**
-   * Computes a hierarchy of fallback selectors ranging from highly specific semantic locators to **relative relational sibling locators** (e.g. XPath `preceding-sibling`, `following-sibling`, and relative CSS `+`).
-   * If a target element has no direct accessible name, the engine automatically anchors it to a nearby named parent or sibling element.
-
-3. **Lazy-Rendering Discovery (`browser_delta`)**
-   * Detects collapsed states (`"expanded": "false"`) and provides an agentic hover/click heuristic to expand, capture, and compare state deltas.
-
-4. **Agent Action Verification (`browser_verify`)**
-   * Pre-flights automation interactions before code generation (checks visibility, enablement, and role-action compatibility).
+No SaaS. No data leaves your machine. MIT license.
 
 ---
 
-## 🛠️ Model Context Protocol (MCP) Server Integration
+## How it works
 
-This framework exposes standard MCP tools for integration into developer interfaces.
+```
+Your AI Agent
+     |
+     | MCP protocol (stdio)
+     v
+Browser Cognition MCP Server
+     |
+     | Chrome DevTools Protocol via Playwright
+     v
+   +---------+     +----------+     +-------------+
+   |   AX    | --> |   Fuse   | --> |   Selector  |
+   |  Tree   |     | DOM Geo  |     |   Engine    |
+   +---------+     +----------+     +-------------+
+                                          |
+                                          v
+                              Self-healing selectors
+                              (ARIA / CSS / XPath / relational)
+```
 
-### Exposed Tools
-* `browser_navigate`: Opens a browser and points the active tab to a URL.
-* `browser_observe`: Analyzes the page and caches the semantic state server-side.
-* `browser_find_targets`: Searches the cached state using server-side filtering (token-efficient; prevents line truncation).
-* `browser_get_selector_plan`: Retrieves the pre-computed selector plan (primary + fallback locators) for a specific semantic node.
-* `browser_act`: Executes mouse actions (`click`, `fill`, `hover`) using selector-healing plans.
-* `browser_verify`: Runs preflight interaction safety validations on a semantic node.
-* `browser_screenshot`: Takes a screenshot of the current page viewport and returns it as a base64 encoded PNG.
-* `browser_evaluate`: Evaluates arbitrary JavaScript inside the page context.
-* `browser_save_cookies`: Saves current context cookies to a file for session persistence.
-* `browser_info`: Returns general page metrics (URL, title, iframe count, main element selectors).
+The agent calls MCP tools in a loop: navigate to a URL, observe the page as structured semantic nodes, find specific targets by role or name, extract data, click to trigger new states, diff the before/after to detect dynamic content. Each step feeds back into the agent's reasoning -- it decides what to do next based on what the page actually shows.
 
-### Exposed Prompts
-* `write-robust-playwright-script`: Instructs the AI agent on how to use the cognition tools to write resilient, zero-dependency Playwright scripts.
+Actionable nodes carry role, name, bounding box, visibility, enabled state, and a ranked list of locators with fallback chains. The agent never sees raw HTML.
 
 ---
 
-## 🔌 Hooking up to AI Coding Agents
+## Quickstart
 
-Ensure you have Playwright browsers installed locally:
 ```bash
+# Install Playwright browsers if you haven't
 npx playwright install chromium
+
+# Run the server (no install needed)
+npx browser-cognition-mcp
 ```
 
-### 🖥️ Claude Desktop (Automatic Setup)
-You can configure Claude Desktop automatically by running:
-```bash
-# Register the published package
-npx browser-cognition-mcp install
+Then connect your AI coding agent:
 
-# (Or in local dev folder)
-npm run configure -- --local
-```
-
-### 🤖 Claude Code (CLI)
-Install the server directly into Claude Code:
+### Claude Code
 ```bash
 claude mcp add browser-cognition -- npx -y browser-cognition-mcp
 ```
 
-### 🚀 Cursor
-1. Navigate to **Settings** -> **Features** -> **MCP**.
-2. Click **+ Add New MCP Server**.
-3. Choose **stdio**, name it `browser-cognition`, set command to `npx`, and arguments to `-y browser-cognition-mcp`.
+### Cursor
+Settings -> Features -> MCP -> Add New MCP Server
+- Name: `browser-cognition`
+- Type: `stdio`
+- Command: `npx -y browser-cognition-mcp`
 
-### 🌐 OpenCode
-OpenCode integrates **natively**! When you open this repository, it automatically reads the [opencode.json](./opencode.json) file and starts the server in the background with zero developer setup required.
+### Claude Desktop
+```bash
+npx browser-cognition-mcp install
+```
 
----
-
-## 📚 Running the Codebase Demos
-
-We have prepared three separate standalone examples in the `examples/` folder to highlight the package features:
-
-1. **Dynamic E-Commerce Scraper & Sibling Selector Demo:**
-   ```bash
-   npx tsx examples/project1_ecommerce_scraper.ts
-   ```
-2. **Interactive Form Filler & Pre-flight Verifier Demo:**
-   ```bash
-   npx tsx examples/project2_form_verifier.ts
-   ```
-3. **Self-Healing Regression Guard Demo:**
-   ```bash
-   npx tsx examples/project3_self_healing_test.ts
-   ```
+### OpenCode
+OpenCode reads `opencode.json` automatically -- zero setup.
 
 ---
 
-## 🧪 Running Tests
-Verify structural fusion, selector ranking, shadow trees, relative XPaths, and action preflights:
+## Before & After
+
+**Before -- fragile selectors that break on every deploy:**
+```ts
+// Works today, fails tomorrow when Tailwind classes rebuild
+await page.click('.btn-primary');
+await page.fill('.css-x83kf2 > input', 'hello');
+```
+
+**After -- semantic selectors with self-healing fallbacks:**
+```ts
+// Agent uses browser_observe to understand the page,
+// then generates standard Playwright locators that survive layout changes
+await page.click('role=button[name="Sign in"]');
+await page.fill('role=textbox[name="Email"]', 'hello');
+
+// If the primary selector fails, the fallback chain kicks in:
+// role=button[name='Sign in']
+//   -> button:has-text('Sign in')
+//   -> xpath=//button[contains(text(),'Sign in')]
+//   -> css=div:has(> button) + button
+```
+
+The self-healing engine anchors unnamed elements to nearby named siblings using relational selectors (XPath preceding-sibling, following-sibling, CSS adjacent `+`). If a button has no accessible name but sits next to a labeled input, the engine finds it anyway.
+
+---
+
+## Why Open Source
+
+- **Local-first.** Every observation runs on your machine. No data is sent to any server -- no API keys, no accounts, no telemetry.
+- **Agnostic.** Works with any MCP-compatible agent. Not tied to a single vendor or platform.
+- **Auditable.** MIT license. You can read every line of code, modify it, and ship it.
+- **Light dependency.** Only depends on Playwright. No heavy frameworks, no external APIs.
+
+---
+
+## MCP Tools
+
+| Tool | Purpose |
+|---|---|
+| `browser_navigate` | Open a URL in the browser |
+| `browser_observe` | Compile page into semantic node map |
+| `browser_find_targets` | Search cached state by role, name, or purpose |
+| `browser_get_selector_plan` | Get primary + fallback locators for a node |
+| `browser_act` | Click, fill, or hover using selector-healing plans |
+| `browser_verify` | Preflight check: visible, enabled, action-compatible |
+| `browser_delta` | Diff two page states (detects lazy-rendered content) |
+| `browser_screenshot` | Capture viewport as base64 PNG |
+| `browser_evaluate` | Run arbitrary JS in page context |
+| `browser_save_cookies` | Persist session cookies to disk |
+| `browser_info` | Page metadata (URL, title, iframe count) |
+
+The server also exposes a `write-robust-playwright-script` prompt that teaches AI agents how to use these tools effectively.
+
+---
+
+## Demos
+
+```bash
+# E-commerce scraper with lazy-rendered reviews
+npx tsx examples/project1_ecommerce_scraper.ts
+
+# Form filler with action preflight verification
+npx tsx examples/project2_form_verifier.ts
+
+# Self-healing across UI refactors (v1 -> v2 with mangled classes)
+npx tsx examples/project3_self_healing_test.ts
+```
+
+---
+
+## Tests
+
 ```bash
 npm test
 ```
+
+Deterministic unit tests -- no browser required. Covers semantic extraction, DOM fusion, selector ranking, relational fallbacks, delta computation, and action verification.
+
+---
+
+## Contributing
+
+Bug reports, feature requests, and PRs are welcome. See [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+Security issues? See [SECURITY.md](./SECURITY.md).
+
+---
+
+## License
+
+MIT -- go build something.
