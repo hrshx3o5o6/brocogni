@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" fill="none">
-  <rect width="160" height="160" rx="32" fill="#111111"/>
-  <circle cx="80" cy="75" r="32" stroke="#ffffff" stroke-width="4" fill="none"/>
-  <circle cx="80" cy="75" r="12" fill="#ffffff"/>
-  <path d="M80 43 Q120 50 120 75 Q120 100 80 107" stroke="#ffffff" stroke-width="4" fill="none" opacity="0.4"/>
-  <path d="M80 107 Q40 100 40 75 Q40 50 80 43" stroke="#ffffff" stroke-width="4" fill="none" opacity="0.4"/>
-  <text x="80" y="138" text-anchor="middle" fill="#ffffff" font-family="system-ui,-apple-system,sans-serif" font-size="16" font-weight="700" letter-spacing="1">Br</text>
-</svg>

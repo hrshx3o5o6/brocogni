@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="Brocogni logo" width="160">
+  <img src="assets/brocogni_logo.png" alt="Brocogni logo" width="160">
 </p>
 
 <h1 align="center">Brocogni</h1>
