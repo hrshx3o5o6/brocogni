@@ -82,14 +82,16 @@ config.mcpServers["browser-cognition"] = serverBlock;
 // Write updated config file
 try {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
-  console.log("\x1b[32m%s\x1b[0m", "✅ Success! Browser Cognition MCP registered successfully.");
+  console.log("\x1b[32m%s\x1b[0m", "✅ Brocogni registered with Claude Desktop successfully.");
   console.log("");
   console.log("👉 Next steps:");
-  console.log("   1. Close and completely restart your Claude Desktop app.");
-  console.log("   2. Verify that Playwright browsers are installed locally:");
+  console.log("   1. Close and restart Claude Desktop to pick up the new server.");
+  console.log("   2. Make sure Playwright browsers are installed:");
   console.log("      \x1b[36mnpx playwright install chromium\x1b[0m");
-  console.log("   3. Open a chat and verify the browser tools are available.");
   console.log("");
+  console.log("   Using Claude Code instead? Run this instead:");
+  console.log("      \x1b[36mclaude mcp add brocogni -- npx -y browser-cognition-mcp\x1b[0m");
+  console.log("   (No restart needed -- it starts on next command.)");
 } catch (err) {
   console.error("\x1b[31m%s\x1b[0m", `❌ Error writing configuration file: ${err.message}`);
   process.exit(1);
