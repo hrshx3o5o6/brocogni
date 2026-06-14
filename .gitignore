@@ -2,8 +2,11 @@ node_modules/
 dist/
 .playwright/
 .DS_Store
-examples
 .antigravitycli
-/tst_files
-test
-ag.md
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!opencode.json
+examples/*.json
+examples/*.png
