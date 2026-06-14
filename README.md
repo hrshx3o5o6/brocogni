@@ -1,6 +1,6 @@
 # Browser Cognition MCP: Agent-First Browser Observability & Self-Healing
 
-An intelligent semantic observation and self-healing selector engine that bridges the gap between fragile web layouts and robust browser automation. Built to enable AI coding agents (Claude Code, Cursor, OpenCode, Antigravity) to write bulletproof, zero-dependency Playwright scripts.
+An intelligent semantic page observer and self-healing selector engine that bridges the gap between fragile web layouts and robust browser automation. Built to enable AI coding agents (Claude Code, Cursor, OpenCode, Antigravity) to write bulletproof, zero-dependency Playwright scripts.
 
 ---
 
@@ -38,50 +38,51 @@ This framework exposes standard MCP tools for integration into developer interfa
 
 ### Exposed Tools
 * `browser_navigate`: Opens a browser and points the active tab to a URL.
-* `browser_observe`: Returns the simplified semantic JSON layout of the active tab.
-* `browser_delta`: Compares two semantic layouts to pinpoint dynamic/revealed changes.
-* `browser_verify`: Runs preflight interaction safety validations on a semantic node.
+* `browser_observe`: Analyzes the page and caches the semantic state server-side.
+* `browser_find_targets`: Searches the cached state using server-side filtering (token-efficient; prevents line truncation).
+* `browser_get_selector_plan`: Retrieves the pre-computed selector plan (primary + fallback locators) for a specific semantic node.
 * `browser_act`: Executes mouse actions (`click`, `fill`, `hover`) using selector-healing plans.
-* `browser_get_selector_plan`: Retrieves the pre-computed selector plan (primary + fallback locators) for a specific semantic node on the page.
+* `browser_verify`: Runs preflight interaction safety validations on a semantic node.
 * `browser_screenshot`: Takes a screenshot of the current page viewport and returns it as a base64 encoded PNG.
+* `browser_evaluate`: Evaluates arbitrary JavaScript inside the page context.
+* `browser_save_cookies`: Saves current context cookies to a file for session persistence.
+* `browser_info`: Returns general page metrics (URL, title, iframe count, main element selectors).
 
 ### Exposed Prompts
-* `write-robust-playwright-script`: Instucts the AI agent on how to use the cognition tools to write resilient, zero-dependency Playwright scripts.
+* `write-robust-playwright-script`: Instructs the AI agent on how to use the cognition tools to write resilient, zero-dependency Playwright scripts.
 
 ---
 
 ## 🔌 Hooking up to AI Coding Agents
 
-Ensure the repository is built first:
+Ensure you have Playwright browsers installed locally:
 ```bash
-npm run build
+npx playwright install chromium
+```
+
+### 🖥️ Claude Desktop (Automatic Setup)
+You can configure Claude Desktop automatically by running:
+```bash
+# Register the published package
+npx browser-cognition-mcp install
+
+# (Or in local dev folder)
+npm run configure -- --local
 ```
 
 ### 🤖 Claude Code (CLI)
 Install the server directly into Claude Code:
 ```bash
-claude mcp add browser-cognition -- node /path/to/playwright-ext/dist/src/runtime/mcp.js
-```
-
-### 🖥️ Claude Desktop
-Add this to your local settings file (`~/Library/Application Support/Claude/claude_desktop_config.json`):
-```json
-{
-  "mcpServers": {
-    "browser-cognition": {
-      "command": "node",
-      "args": [
-        "/path/to/playwright-ext/dist/src/runtime/mcp.js"
-      ]
-    }
-  }
-}
+claude mcp add browser-cognition -- npx -y browser-cognition-mcp
 ```
 
 ### 🚀 Cursor
 1. Navigate to **Settings** -> **Features** -> **MCP**.
 2. Click **+ Add New MCP Server**.
-3. Choose **stdio**, name it `browser-cognition`, set command to `node`, and arguments to `/path/to/playwright-ext/dist/src/runtime/mcp.js`.
+3. Choose **stdio**, name it `browser-cognition`, set command to `npx`, and arguments to `-y browser-cognition-mcp`.
+
+### 🌐 OpenCode
+OpenCode integrates **natively**! When you open this repository, it automatically reads the [opencode.json](./opencode.json) file and starts the server in the background with zero developer setup required.
 
 ---
 

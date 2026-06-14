@@ -5,7 +5,7 @@
       "type": "local",
       "command": [
         "node",
-        "/Users/harsha/Downloads/ventures_hacks_projects_backup/playwright-ext/dist/src/runtime/mcp.js"
+        "./dist/src/runtime/mcp.js"
       ]
     }
   }

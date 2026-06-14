@@ -1,9 +1,101 @@
 #!/usr/bin/env node
 import * as readline from "node:readline";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import * as os from "node:os";
 import { chromium, Browser, BrowserContext, Page } from "playwright";
 import { BrowserCognitionService } from "./service.js";
 import { observeSemanticState, SemanticPageState } from "../index.js";
 import { AGENT_INSTRUCTIONS } from "./prompts/instructions.js";
+
+// Automatic installer/configurator command
+if (process.argv.includes("install") || process.argv.includes("configure") || process.argv.includes("--configure")) {
+  const isLocalDev = process.argv.includes("--local");
+  
+  function expandHome(filepath: string) {
+    if (filepath.startsWith("~")) {
+      return path.join(os.homedir(), filepath.slice(1));
+    }
+    return filepath;
+  }
+
+  function getClaudeConfigPath() {
+    const platform = process.platform;
+    if (platform === "darwin") {
+      return expandHome("~/Library/Application Support/Claude/claude_desktop_config.json");
+    } else if (platform === "win32") {
+      const appData = process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming");
+      return path.join(appData, "Claude", "claude_desktop_config.json");
+    }
+    return null;
+  }
+
+  console.log("\x1b[36m%s\x1b[0m", "⚙️  Browser Cognition MCP Installer");
+  console.log("-----------------------------------------");
+
+  const configPath = getClaudeConfigPath();
+  if (!configPath) {
+    console.error("\x1b[31m%s\x1b[0m", "❌ Error: Claude Desktop is only supported on macOS and Windows.");
+    process.exit(1);
+  }
+
+  console.log(`📂 Target Config File: ${configPath}`);
+
+  const dir = path.dirname(configPath);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+
+  let config: any = {};
+  if (fs.existsSync(configPath)) {
+    try {
+      const raw = fs.readFileSync(configPath, "utf8");
+      config = JSON.parse(raw);
+    } catch {
+      console.warn("\x1b[33m%s\x1b[0m", "⚠️  Warning: Existing config file could not be parsed. Initializing new one.");
+    }
+  }
+
+  if (!config.mcpServers) {
+    config.mcpServers = {};
+  }
+
+  let serverBlock = {};
+  if (isLocalDev) {
+    // Local dev setup
+    const localMcpPath = path.resolve("./dist/src/runtime/mcp.js");
+    console.log(`🔧 Local Dev Mode active. Pointing to: ${localMcpPath}`);
+    serverBlock = {
+      command: "node",
+      args: [localMcpPath]
+    };
+  } else {
+    // Production npx setup
+    console.log("📦 Production mode active. Configuring to run via global NPX wrapper...");
+    serverBlock = {
+      command: "npx",
+      args: ["-y", "browser-cognition-mcp"]
+    };
+  }
+
+  config.mcpServers["browser-cognition"] = serverBlock;
+
+  try {
+    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
+    console.log("\x1b[32m%s\x1b[0m", "✅ Success! Browser Cognition MCP registered successfully.");
+    console.log("");
+    console.log("👉 Next steps:");
+    console.log("   1. Close and completely restart your Claude Desktop app.");
+    console.log("   2. Verify that Playwright browsers are installed locally:");
+    console.log("      \x1b[36mnpx playwright install chromium\x1b[0m");
+    console.log("   3. Open a chat and verify the browser tools are available.");
+    console.log("");
+    process.exit(0);
+  } catch (err: any) {
+    console.error("\x1b[31m%s\x1b[0m", `❌ Error writing configuration file: ${err.message}`);
+    process.exit(1);
+  }
+}
 
 const service = new BrowserCognitionService();
 
@@ -14,20 +106,31 @@ let lastState: SemanticPageState | null = null;
 let previousState: SemanticPageState | null = null;
 
 async function getOrCreatePage(): Promise<Page> {
-  if (!browserInstance) {
-    try {
-      browserInstance = await chromium.launch({ headless: false });
-    } catch {
-      browserInstance = await chromium.launch({ headless: true });
+  try {
+    if (!browserInstance) {
+      try {
+        browserInstance = await chromium.launch({ headless: false });
+      } catch {
+        try {
+          browserInstance = await chromium.launch({ headless: true });
+        } catch (err: any) {
+          console.error("\n🚨 [Browser Cognition] Failed to launch Playwright Chromium.");
+          console.error("   Please ensure Playwright browser binaries are installed by running:");
+          console.error("   npx playwright install chromium\n");
+          throw err;
+        }
+      }
     }
+    if (!contextInstance) {
+      contextInstance = await browserInstance.newContext();
+    }
+    if (!pageInstance) {
+      pageInstance = await contextInstance.newPage();
+    }
+    return pageInstance;
+  } catch (e: any) {
+    throw new Error(`Failed to initialize browser session: ${e?.message || String(e)}. Make sure to run 'npx playwright install chromium' first.`);
   }
-  if (!contextInstance) {
-    contextInstance = await browserInstance.newContext();
-  }
-  if (!pageInstance) {
-    pageInstance = await contextInstance.newPage();
-  }
-  return pageInstance;
 }
 
 async function cleanup() {

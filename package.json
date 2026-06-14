@@ -1,16 +1,38 @@
 {
-  "name": "browser-cognition-prototype",
-  "version": "0.1.0",
-  "private": false,
+  "name": "browser-cognition-mcp",
+  "version": "1.0.0",
+  "description": "Browser Cognition Framework: An intelligent semantic page observer and self-healing selector engine that bridges layout changes and browser automation for AI coding agents.",
   "type": "module",
   "bin": {
     "browser-cognition-mcp": "./dist/src/runtime/mcp.js"
   },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE",
+    "opencode.json"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",
     "start": "node dist/src/runtime/mcp.js",
+    "configure": "node bin/configure.js",
     "test": "npm run build && node --test dist/test/**/*.test.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "playwright",
+    "browser-automation",
+    "accessibility-tree",
+    "self-healing-selectors",
+    "ai-agents"
+  ],
+  "author": "Harsha",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hrshx3o5o6/playwright-ext.git"
   },
   "dependencies": {
     "playwright": "^1.54.2"
