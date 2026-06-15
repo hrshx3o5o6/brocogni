@@ -10,55 +10,8 @@ import { AGENT_INSTRUCTIONS } from "./prompts/instructions.js";
 
 // Automatic installer/configurator command
 if (process.argv.includes("install") || process.argv.includes("configure") || process.argv.includes("--configure")) {
-  const isLocalDev = process.argv.includes("--local");
-
-  function expandHome(filepath: string) {
-    if (filepath.startsWith("~")) {
-      return path.join(os.homedir(), filepath.slice(1));
-    }
-    return filepath;
-  }
-
-  const serverBlock = isLocalDev
-    ? { command: "node", args: [path.resolve("./dist/src/runtime/mcp.js")] }
-    : { command: "npx", args: ["-y", "browser-cognition-mcp"] };
-
-  // Try configuring Claude Desktop if available
-  const platform = process.platform;
-  const configPath = (platform === "darwin")
-    ? expandHome("~/Library/Application Support/Claude/claude_desktop_config.json")
-    : (platform === "win32")
-      ? path.join(process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"), "Claude", "claude_desktop_config.json")
-      : null;
-
-  if (configPath) {
-    const dir = path.dirname(configPath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    let config: any = {};
-    if (fs.existsSync(configPath)) {
-      try { config = JSON.parse(fs.readFileSync(configPath, "utf8")); }
-      catch { console.warn("  Existing config malformed, creating new one."); }
-    }
-    if (!config.mcpServers) config.mcpServers = {};
-    config.mcpServers["brocogni"] = serverBlock;
-    fs.writeFileSync(configPath, JSON.stringify(config, null, 2), "utf8");
-    console.log("  Configured for Claude Desktop: " + configPath);
-  } else {
-    console.log("  Claude Desktop config path not found on this platform.");
-  }
-
-  console.log("");
-  console.log("Brocogni registered. To connect it to your MCP client:");
-  console.log("");
-  console.log("  Claude Desktop    Restart the app (already configured)");
-  console.log("  Claude Code       claude mcp add brocogni -- npx -y browser-cognition-mcp");
-  console.log("  Cursor            Settings -> Features -> MCP -> Add New");
-  console.log("                    Name: brocogni | Type: stdio | Cmd: npx -y browser-cognition-mcp");
-  console.log("  OpenCode          Auto-detected via opencode.json in project root");
-  console.log("");
-  console.log("Make sure Playwright browsers are installed:");
-  console.log("  npx playwright install chromium");
-  console.log("");
+  const { runSetup } = await import("../setup/index.js");
+  await runSetup();
   process.exit(0);
 }
 

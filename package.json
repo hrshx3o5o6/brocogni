@@ -36,11 +36,12 @@
     "url": "git+https://github.com/hrshx3o5o6/playwright-ext.git"
   },
   "dependencies": {
+    "@clack/prompts": "^1.5.1",
     "playwright": "^1.54.2"
   },
   "devDependencies": {
-    "typescript": "^5.6.3",
+    "@types/node": "^22.10.1",
     "tsx": "^4.19.2",
-    "@types/node": "^22.10.1"
+    "typescript": "^5.6.3"
   }
 }
