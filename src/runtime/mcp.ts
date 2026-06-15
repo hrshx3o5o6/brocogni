@@ -256,11 +256,32 @@ rl.on("line", async (line) => {
   }
 });
 
+function sendResult(id: string | number | null, result: any) {
+  if (id === null || id === undefined) return;
+  console.log(JSON.stringify({
+    jsonrpc: "2.0",
+    id,
+    result
+  }));
+}
+
+function sendError(id: string | number | null, code: number, message: string) {
+  if (id === null || id === undefined) return;
+  console.log(JSON.stringify({
+    jsonrpc: "2.0",
+    id,
+    error: { code, message }
+  }));
+}
+
 async function handleRequest(method: string, params: any): Promise<any> {
+  // Notifications: must not produce a response
+  if (method.startsWith("notifications/")) return;
+
   switch (method) {
     case "initialize":
       return {
-        protocolVersion: "2024-11-05",
+        protocolVersion: params?.protocolVersion || "2024-11-05",
         capabilities: {
           tools: {},
           prompts: {}
@@ -491,21 +512,4 @@ async function executeTool(name: string, args: any): Promise<string> {
     default:
       throw new Error(`Tool not found: ${name}`);
   }
-}
-
-function sendResult(id: string | number | null, result: any) {
-  if (id === null) return;
-  console.log(JSON.stringify({
-    jsonrpc: "2.0",
-    id,
-    result
-  }));
-}
-
-function sendError(id: string | number | null, code: number, message: string) {
-  console.log(JSON.stringify({
-    jsonrpc: "2.0",
-    id,
-    error: { code, message }
-  }));
 }
