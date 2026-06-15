@@ -25,9 +25,7 @@ Brocogni is an open-source MCP server that sits between your AI agent and Playwr
 
 No SaaS. No data leaves your machine. MIT.
 
-<p align="center">
-  <video src="assets/demo.mp4" controls width="720"></video>
-</p>
+[▶️ Watch the 15-second demo](https://raw.githubusercontent.com/hrshx3o5o6/brocogni/main/assets/demo.mp4)
 
 ---
 
