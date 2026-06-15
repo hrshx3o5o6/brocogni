@@ -33,7 +33,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hrshx3o5o6/playwright-ext.git"
+    "url": "git+https://github.com/hrshx3o5o6/brocogni.git"
   },
   "dependencies": {
     "@clack/prompts": "^1.5.1",
