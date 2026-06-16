@@ -7,7 +7,6 @@
 <p align="center"><em>Making Playwright make sense to AI agents.</em></p>
 
 <p align="center">
-  <a href="https://github.com/hrshx3o5o6/brocogni"><img src="https://img.shields.io/github/stars/hrshx3o5o6/playwright-ext?style=flat-square&color=111111&label=stars" alt="Stars"></a>
   <a href="./LICENSE"><img src="https://img.shields.io/badge/license-MIT-111111?style=flat-square" alt="MIT license"></a>
   <a href="https://www.npmjs.com/package/browser-cognition-mcp"><img src="https://img.shields.io/badge/npm-browser--cognition--mcp-111111?style=flat-square" alt="npm"></a>
 </p>
