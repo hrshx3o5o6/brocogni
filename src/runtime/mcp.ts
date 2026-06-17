@@ -8,8 +8,39 @@ import { BrowserCognitionService } from "./service.js";
 import { observeSemanticState, SemanticPageState } from "../index.js";
 import { AGENT_INSTRUCTIONS } from "./prompts/instructions.js";
 
+const args = process.argv.slice(2);
+
+if (args.includes("--help") || args.includes("-h")) {
+  console.log(`
+Brocogni — Making Playwright make sense to AI agents.
+
+USAGE
+  npx browser-cognition-mcp           Start MCP server (for MCP clients)
+  npx browser-cognition-mcp install   Interactive setup (detect & configure clients)
+  npx browser-cognition-mcp --help    Show this message
+  npx browser-cognition-mcp --version Show version
+
+Run without arguments in a terminal to launch interactive setup.
+Pipe stdin from an MCP client to start the server.
+
+SETUP
+  Detects Cursor, Windsurf, Claude Desktop/Code, OpenCode, Antrophic.
+  Use --dry-run to preview config without writing anything.
+
+DOCS  https://github.com/hrshx3o5o6/brocogni
+`);
+  process.exit(0);
+}
+
+if (args.includes("--version") || args.includes("-v")) {
+  const { createRequire } = await import("node:module");
+  const pkg = createRequire(import.meta.url)("../../../package.json");
+  console.log(pkg.version);
+  process.exit(0);
+}
+
 // Interactive setup when run directly by a human; MCP server when piped
-if (process.argv.includes("install") || process.argv.includes("configure") || process.argv.includes("--configure") || process.stdin.isTTY) {
+if (args.includes("install") || args.includes("configure") || args.includes("--setup") || args.includes("--configure") || process.stdin.isTTY) {
   const { runSetup } = await import("../setup/index.js");
   await runSetup();
   process.exit(0);
