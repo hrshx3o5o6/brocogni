@@ -8,8 +8,8 @@ import { BrowserCognitionService } from "./service.js";
 import { observeSemanticState, SemanticPageState } from "../index.js";
 import { AGENT_INSTRUCTIONS } from "./prompts/instructions.js";
 
-// Automatic installer/configurator command
-if (process.argv.includes("install") || process.argv.includes("configure") || process.argv.includes("--configure")) {
+// Interactive setup when run directly by a human; MCP server when piped
+if (process.argv.includes("install") || process.argv.includes("configure") || process.argv.includes("--configure") || process.stdin.isTTY) {
   const { runSetup } = await import("../setup/index.js");
   await runSetup();
   process.exit(0);
