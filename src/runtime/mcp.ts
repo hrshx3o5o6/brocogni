@@ -24,7 +24,7 @@ Run without arguments in a terminal to launch interactive setup.
 Pipe stdin from an MCP client to start the server.
 
 SETUP
-  Detects Cursor, Windsurf, Claude Desktop/Code, OpenCode, Antrophic.
+  Detects Cursor, Windsurf, Claude Desktop/Code, OpenCode, Antrophic, Hermes.
   Use --dry-run to preview config without writing anything.
 
 DOCS  https://github.com/hrshx3o5o6/brocogni

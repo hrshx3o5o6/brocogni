@@ -18,6 +18,11 @@ interface ClientDef {
   extraInstructions(): string | null;
 }
 
+function serializeYaml(block: ServerBlock): string {
+  const args = block.args.map((a) => JSON.stringify(a)).join(", ");
+  return `mcp_servers:\n  brocogni:\n    command: ${JSON.stringify(block.command)}\n    args: [${args}]\n`;
+}
+
 const CLIENTS: ClientDef[] = [
   {
     id: "antigravity",
@@ -165,6 +170,57 @@ const CLIENTS: ClientDef[] = [
     serverKey: () => "brocogni",
     write() { return false; },
     extraInstructions: () => "Add to your project's opencode.json:\n  {\n    \"mcp\": {\n      \"brocogni\": {\n        \"type\": \"local\",\n        \"command\": [\"npx\", \"-y\", \"browser-cognition-mcp\"]\n      }\n    }\n  }",
+  },
+  {
+    id: "hermes",
+    name: "Hermes Agent",
+    detect: () => fs.existsSync(path.join(os.homedir(), ".hermes")),
+    isActive: () => process.env.PATH?.split(path.delimiter).some((p) =>
+      fs.existsSync(path.join(p, "hermes"))
+    ) ?? false,
+    configPath: () => path.join(os.homedir(), ".hermes", "config.yaml"),
+    serverKey: () => "brocogni",
+    write(block) {
+      const cp = this.configPath();
+      if (!cp) return false;
+      const dir = path.dirname(cp);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      let existing = "";
+      if (fs.existsSync(cp)) {
+        existing = fs.readFileSync(cp, "utf8");
+      }
+      const yaml = serializeYaml(block as ServerBlock);
+      if (existing.includes("mcp_servers:")) {
+        if (existing.includes("  brocogni:")) {
+          const lines = existing.split("\n");
+          let start = -1;
+          let end = -1;
+          for (let i = 0; i < lines.length; i++) {
+            if (lines[i].trimStart().startsWith("  brocogni:")) {
+              start = i;
+              end = i + 1;
+              while (end < lines.length && lines[end].startsWith("    ")) end++;
+              break;
+            }
+          }
+          if (start >= 0) {
+            const blockLines = yaml.split("\n").filter((l) => l.trim()).map((l) => l.startsWith("  ") ? l : "  " + l);
+            lines.splice(start, end - start, ...blockLines);
+            fs.writeFileSync(cp, lines.join("\n") + "\n", "utf8");
+            return true;
+          }
+        }
+        const blockLines = yaml.split("\n").filter((l) => l.trim()).map((l) => l.startsWith("  ") ? l : "  " + l);
+        const insertAt = existing.lastIndexOf("\n") + 1;
+        const before = existing.slice(0, insertAt);
+        const after = existing.slice(insertAt);
+        fs.writeFileSync(cp, before + blockLines.join("\n") + "\n" + after, "utf8");
+      } else {
+        fs.writeFileSync(cp, existing + (existing.endsWith("\n") ? "" : "\n") + yaml, "utf8");
+      }
+      return true;
+    },
+    extraInstructions: () => "Restart Hermes or run `/reload-mcp` to pick up the new server.",
   },
 ];
 
