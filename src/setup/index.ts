@@ -162,16 +162,47 @@ const CLIENTS: ClientDef[] = [
     id: "opencode",
     name: "OpenCode",
     detect: () => {
-      // Check local project files or global config directory
       const localPaths = [".opencode.json", "opencode.json", "../.opencode.json", "../opencode.json"];
       if (localPaths.some(p => fs.existsSync(p))) return true;
       return fs.existsSync(path.join(os.homedir(), ".config", "opencode"));
     },
     isActive: () => !!process.env.OPENCODE_AGENT,
-    configPath: () => null,
+    configPath: () => {
+      const localPaths = [".opencode.json", "opencode.json", "../.opencode.json", "../opencode.json"];
+      for (const p of localPaths) {
+        if (fs.existsSync(p)) return path.resolve(p);
+      }
+      const globalDir = path.join(os.homedir(), ".config", "opencode");
+      // OpenCode global config can be config.json or opencode.json
+      for (const name of ["config.json", "opencode.json"]) {
+        const fp = path.join(globalDir, name);
+        if (fs.existsSync(fp)) return fp;
+      }
+      // Neither exists yet — write to a sensible default
+      return path.join(globalDir, "config.json");
+    },
     serverKey: () => "brocogni",
-    write() { return false; },
-    extraInstructions: () => "Add to your project's opencode.json:\n  {\n    \"mcp\": {\n      \"brocogni\": {\n        \"type\": \"local\",\n        \"command\": [\"npx\", \"-y\", \"browser-cognition-mcp\"]\n      }\n    }\n  }",
+    write(block) {
+      const cp = this.configPath();
+      if (!cp) return false;
+      const dir = path.dirname(cp);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      let config: any = {};
+      if (fs.existsSync(cp)) {
+        try { config = JSON.parse(fs.readFileSync(cp, "utf8")); }
+        catch { /* will overwrite */ }
+      }
+      if (!config.mcp) config.mcp = {};
+      config.mcp[this.serverKey()] = {
+        type: "local",
+        command: [block.command, ...block.args]
+      };
+      // Preserve $schema if present
+      if (!config.$schema) config.$schema = "https://opencode.ai/config.json";
+      fs.writeFileSync(cp, JSON.stringify(config, null, 2), "utf8");
+      return true;
+    },
+    extraInstructions: () => null,
   },
   {
     id: "hermes",
