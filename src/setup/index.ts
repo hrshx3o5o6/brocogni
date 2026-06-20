@@ -153,10 +153,24 @@ const CLIENTS: ClientDef[] = [
         fs.existsSync(path.join(home, ".claude", "settings.json"));
     },
     isActive: () => !!process.env.CLAUDE_CODE,
-    configPath: () => null,
+    configPath: () => path.join(os.homedir(), ".claude", "settings.json"),
     serverKey: () => "brocogni",
-    write() { return false; },
-    extraInstructions: () => "Run: claude mcp add brocogni -- npx -y browser-cognition-mcp",
+    write(block) {
+      const cp = this.configPath();
+      if (!cp) return false;
+      const dir = path.dirname(cp);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+      let config: any = {};
+      if (fs.existsSync(cp)) {
+        try { config = JSON.parse(fs.readFileSync(cp, "utf8")); }
+        catch { /* will overwrite */ }
+      }
+      if (!config.mcpServers) config.mcpServers = {};
+      config.mcpServers[this.serverKey()] = block;
+      fs.writeFileSync(cp, JSON.stringify(config, null, 2), "utf8");
+      return true;
+    },
+    extraInstructions: () => null,
   },
   {
     id: "opencode",

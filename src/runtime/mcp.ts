@@ -49,12 +49,49 @@ if (args.includes("install") || args.includes("configure") || args.includes("--s
 const service = new BrowserCognitionService();
 
 let browserInstance: Browser | null = null;
-let contextInstance: BrowserContext | null = null;
 let pageInstance: Page | null = null;
 let lastState: SemanticPageState | null = null;
 let previousState: SemanticPageState | null = null;
+let isCdpMode = false;
+
+async function tryConnectCDP(): Promise<Page | null> {
+  const ports = [9222, 9223, 9224];
+  for (const port of ports) {
+    try {
+      const browser = await chromium.connectOverCDP(`http://127.0.0.1:${port}`);
+      browserInstance = browser;
+      isCdpMode = true;
+      const contexts = browser.contexts();
+      if (contexts.length > 0) {
+        const pages = contexts[0].pages();
+        if (pages.length > 0) {
+          pageInstance = pages[0];
+          console.error(`[Brocogni] Connected to existing Chrome on port ${port}, using tab: ${await pageInstance.title()}`);
+          return pageInstance;
+        }
+      }
+      // Connected but no pages yet — open a new tab
+      const ctx = contexts[0] || await browser.newContext();
+      pageInstance = await ctx.newPage();
+      console.error(`[Brocogni] Connected to existing Chrome on port ${port}, opened new tab`);
+      return pageInstance;
+    } catch {
+      continue;
+    }
+  }
+  return null;
+}
 
 async function getOrCreatePage(): Promise<Page> {
+  if (pageInstance) return pageInstance;
+
+  // Try connecting to an existing Chrome instance first
+  if (!browserInstance) {
+    const cdpPage = await tryConnectCDP();
+    if (cdpPage) return cdpPage;
+  }
+
+  // Fall back to launching a fresh browser
   try {
     if (!browserInstance) {
       try {
@@ -70,11 +107,9 @@ async function getOrCreatePage(): Promise<Page> {
         }
       }
     }
-    if (!contextInstance) {
-      contextInstance = await browserInstance.newContext();
-    }
     if (!pageInstance) {
-      pageInstance = await contextInstance.newPage();
+      const ctx = browserInstance.contexts()[0] || await browserInstance.newContext();
+      pageInstance = await ctx.newPage();
     }
     return pageInstance;
   } catch (e: any) {
@@ -82,10 +117,41 @@ async function getOrCreatePage(): Promise<Page> {
   }
 }
 
+async function listPages(): Promise<Array<{ index: number; title: string; url: string }>> {
+  const pages: Page[] = [];
+  if (isCdpMode && browserInstance) {
+    for (const ctx of browserInstance.contexts()) {
+      pages.push(...ctx.pages());
+    }
+  } else if (pageInstance) {
+    pages.push(pageInstance);
+  }
+  return Promise.all(pages.map(async (p, i) => ({
+    index: i,
+    title: await p.title(),
+    url: p.url(),
+  })));
+}
+
+async function switchToPage(index: number): Promise<Page | null> {
+  if (!isCdpMode || !browserInstance) return null;
+  let idx = 0;
+  for (const ctx of browserInstance.contexts()) {
+    const pages = ctx.pages();
+    for (const p of pages) {
+      if (idx === index) {
+        pageInstance = p;
+        return p;
+      }
+      idx++;
+    }
+  }
+  return null;
+}
+
 async function cleanup() {
-  if (pageInstance) await pageInstance.close().catch(() => {});
-  if (contextInstance) await contextInstance.close().catch(() => {});
-  if (browserInstance) await browserInstance.close().catch(() => {});
+  if (pageInstance && !isCdpMode) await pageInstance.close().catch(() => {});
+  if (browserInstance && !isCdpMode) await browserInstance.close().catch(() => {});
   process.exit(0);
 }
 
@@ -196,6 +262,25 @@ const TOOLS = [
         code: { type: "string", description: "JavaScript function body to execute in the page context." }
       },
       required: ["code"]
+    }
+  },
+  {
+    name: "browser_list_pages",
+    description: "List all open tabs/pages in the browser session. Returns index, title, and URL for each.",
+    inputSchema: {
+      type: "object",
+      properties: {}
+    }
+  },
+  {
+    name: "browser_use_page",
+    description: "Switch the active page context to a specific tab by its index (from browser_list_pages).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        index: { type: "number", description: "The index of the page to switch to (from browser_list_pages)." }
+      },
+      required: ["index"]
     }
   },
   {
@@ -476,6 +561,22 @@ async function executeTool(name: string, args: any): Promise<string> {
         return fn();
       }, args.code);
       return JSON.stringify({ success: true, result });
+    }
+
+    case "browser_list_pages": {
+      await getOrCreatePage();
+      const pages = await listPages();
+      return JSON.stringify({ pages });
+    }
+
+    case "browser_use_page": {
+      const page = await switchToPage(args.index);
+      if (!page) {
+        throw new Error(`Page index ${args.index} not found. Run browser_list_pages to see available pages.`);
+      }
+      const title = await page.title();
+      const url = page.url();
+      return JSON.stringify({ success: true, page: { index: args.index, title, url } });
     }
 
     case "browser_save_cookies": {
