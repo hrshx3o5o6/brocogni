@@ -1,6 +1,6 @@
 {
   "name": "browser-cognition-mcp",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Brocogni -- Making Playwright make sense to AI agents. MCP server for semantic browser observation and self-healing selectors.",
   "type": "module",
   "bin": {
@@ -37,6 +37,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.5.1",
+    "browser-cognition-mcp": "^1.0.8",
     "playwright": "^1.54.2"
   },
   "devDependencies": {

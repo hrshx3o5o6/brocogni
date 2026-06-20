@@ -162,8 +162,10 @@ const CLIENTS: ClientDef[] = [
     id: "opencode",
     name: "OpenCode",
     detect: () => {
-      const paths = [".opencode.json", "opencode.json", "../.opencode.json", "../opencode.json"];
-      return paths.some(p => fs.existsSync(p));
+      // Check local project files or global config directory
+      const localPaths = [".opencode.json", "opencode.json", "../.opencode.json", "../opencode.json"];
+      if (localPaths.some(p => fs.existsSync(p))) return true;
+      return fs.existsSync(path.join(os.homedir(), ".config", "opencode"));
     },
     isActive: () => !!process.env.OPENCODE_AGENT,
     configPath: () => null,
