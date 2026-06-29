@@ -11,3 +11,6 @@ dist/
 examples/*.json
 examples/*.png
 skills
+benchmark/
+frontend/
+.agent-ver/
